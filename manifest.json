@@ -1,0 +1,17 @@
+{
+  "name": "솔루나 실전낚시 PRO",
+  "short_name": "솔루나낚시",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "description": "월령, 기상, 수온 추정, 피딩 타임을 기반으로 한 낚시 출조 예측 앱",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

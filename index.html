@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f172a" />
+<title>노론한량-솔루나 실전낚시 PRO</title>
+
+<link rel="icon" href="./icon.png" type="image/svg+xml" />
+<link rel="manifest" href="./manifest.json" />
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+    --bg-main:#0f172a;
+    --bg-card:#1e293b;
+    --accent:#38bdf8;
+    --text-main:#f8fafc;
+    --text-muted:#94a3b8;
+    --blue:#60a5fa;
+}
+* { box-sizing:border-box; }
+body {
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg-main);
+    color:var(--text-main);
+    margin:0;
+}
+.app-container {
+    max-width:520px;
+    margin:0 auto;
+    padding:15px;
+    min-height:100vh;
+}
+.header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+}
+.app-title { font-size:18px; font-weight:900; }
+.small-btn {
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.15);
+    color:var(--text-main);
+    padding:8px 10px;
+    border-radius:10px;
+    cursor:pointer;
+}
+.fish-toggle {
+    display:flex;
+    background:var(--bg-card);
+    border-radius:12px;
+    padding:4px;
+    margin-bottom:12px;
+}
+.fish-tab {
+    flex:1;
+    padding:12px 6px;
+    text-align:center;
+    border-radius:8px;
+    font-weight:800;
+    cursor:pointer;
+    font-size:14px;
+    color:var(--text-muted);
+}
+.fish-tab.active {
+    background:var(--accent);
+    color:#000;
+}
+.select-row {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-bottom:12px;
+}
+select,input {
+    width:100%;
+    background:var(--bg-card);
+    color:var(--text-main);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:10px;
+    padding:10px;
+}
+.solunar-card {
+    background:linear-gradient(180deg,var(--bg-card),var(--bg-main));
+    border-radius:18px;
+    padding:16px;
+    text-align:center;
+    margin-bottom:15px;
+    border:1px solid rgba(255,255,255,.08);
+}
+.nav-btn {
+    background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.18);
+    color:var(--text-main);
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+    cursor:pointer;
+}
+.nav-btn:disabled {
+    opacity:.35;
+    cursor:not-allowed;
+}
+.score {
+    font-size:56px;
+    font-weight:900;
+    margin:10px 0 6px;
+}
+.badge {
+    padding:8px 18px;
+    border-radius:999px;
+    font-weight:900;
+    display:inline-block;
+}
+.section-title {
+    font-size:14px;
+    font-weight:900;
+    margin:18px 4px 8px;
+}
+.data-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+.data-item {
+    background:var(--bg-card);
+    padding:12px;
+    border-radius:12px;
+    min-height:75px;
+}
+.data-label {
+    font-size:11px;
+    color:var(--text-muted);
+    margin-bottom:5px;
+}
+.data-value {
+    font-size:16px;
+    font-weight:900;
+}
+.note {
+    font-size:11.5px;
+    color:var(--blue);
+    margin-top:5px;
+    line-height:1.45;
+}
+.card {
+    background:var(--bg-card);
+    padding:15px;
+    border-radius:14px;
+    margin-bottom:12px;
+}
+.strategy-card {
+    font-size:12.6px;
+    line-height:1.6;
+}
+.timeline-item {
+    margin-bottom:18px;
+    padding-left:14px;
+    border-left:3px solid var(--accent);
+}
+.time-reason {
+    font-size:12px;
+    line-height:1.45;
+    color:var(--text-muted);
+    margin-top:5px;
+}
+.type-tag {
+    font-size:10px;
+    padding:3px 8px;
+    border-radius:6px;
+    font-weight:900;
+}
+.type-major { background:#ef4444; color:white; }
+.type-minor { background:#f97316; color:white; }
+.footer-note {
+    color:var(--text-muted);
+    font-size:11.5px;
+    line-height:1.5;
+    margin:15px 0 14px;
+}
+.author {
+    text-align:center;
+    color:var(--accent);
+    font-size:12px;
+    font-weight:800;
+    padding:18px 0 26px;
+    opacity:.9;
+}
+</style>
+</head>
+
+<body>
+<div class="app-container">
+
+    <div class="header">
+        <div>
+            <div class="app-title">🎣 노론한량-솔루나 실전낚시 PRO</div>
+            <div style="font-size:12px;color:var(--text-muted)">
+                월령 · 예보 · 수온 · 수위 · 피딩 예측
+            </div>
+        </div>
+        <button class="small-btn" onclick="useGPS()">GPS</button>
+    </div>
+
+    <div class="fish-toggle">
+        <div class="fish-tab active" id="tab-ssogari" onclick="switchFish('ssogari')">쏘가리</div>
+        <div class="fish-tab" id="tab-megi" onclick="switchFish('megi')">메기</div>
+        <div class="fish-tab" id="tab-kkeokji" onclick="switchFish('kkeokji')">꺽지</div>
+    </div>
+
+    <div class="select-row">
+        <select id="spot-select" onchange="changeSpot()">
+            <option value="pyeongchang">평창군 평창강</option>
+            <option value="joyang">정선군 조양강</option>
+            <option value="yeongwol_donggang">영월군 동강</option>
+            <option value="danyang_namhan">단양군 남한강</option>
+            <option value="custom">현재/GPS 위치</option>
+        </select>
+        <input id="custom-name" placeholder="포인트 메모" />
+    </div>
+
+    <div class="solunar-card">
+        <div style="display:flex;align-items:center;justify-content:center;gap:15px;">
+            <button class="nav-btn" id="prev-btn" onclick="changeDate(-1)">◀</button>
+            <div>
+                <div id="display-date" style="font-size:17px;font-weight:900;"></div>
+                <div id="date-range-note" style="font-size:11px;color:var(--text-muted);margin-top:2px;"></div>
+                <div id="fish-name" style="color:var(--accent);font-size:15px;margin-top:3px;"></div>
+                <div id="location-name" style="font-size:12px;color:var(--text-muted);margin-top:3px;"></div>
+            </div>
+            <button class="nav-btn" id="next-btn" onclick="changeDate(1)">▶</button>
+        </div>
+
+        <div id="score-text" class="score"></div>
+        <div id="status-text" class="badge"></div>
+        <div id="one-line-advice" style="margin-top:12px;font-size:12.8px;color:var(--text-muted);line-height:1.45"></div>
+    </div>
+
+    <div class="section-title">천문 · 기상 · 수문 분석</div>
+    <div class="data-grid">
+        <div class="data-item">
+            <div class="data-label">실제 월령 / 달상</div>
+            <div class="data-value" id="val-moon"></div>
+            <div class="note" id="moon-influence"></div>
+        </div>
+        <div class="data-item">
+            <div class="data-label">기온 / 강수</div>
+            <div class="data-value" id="val-temp"></div>
+            <div class="note" id="val-rain"></div>
+        </div>
+        <div class="data-item">
+            <div class="data-label">기압 / 풍속</div>
+            <div class="data-value" id="val-pressure"></div>
+            <div class="note" id="val-wind"></div>
+        </div>
+        <div class="data-item">
+            <div class="data-label">하천 수온 / 수위</div>
+            <div class="data-value" id="val-watertemp"></div>
+            <div class="note" id="val-waterlevel"></div>
+        </div>
+    </div>
+
+    <div class="section-title">시간대별 입질 확률</div>
+    <div class="card">
+        <canvas id="feedingChart" height="170"></canvas>
+    </div>
+
+    <div class="section-title">예측 피딩 타임라인 & 타깃 근거</div>
+    <div class="card" id="timeline-contents"></div>
+
+    <div class="section-title">오늘의 출조 전략</div>
+    <div class="card strategy-card" id="strategy"></div>
+
+    <div class="footer-note">
+        ※ 날짜 이동 범위는 오늘 기준 과거 1주일, 미래 2주일까지입니다.
+        과거 날짜는 과거 기상 데이터, 미래 날짜는 예보 데이터를 사용합니다.
+        <br><br>
+        ※ 실제 수온/수위 API는 공공데이터 키 또는 자체 서버가 필요합니다.
+        이 코드는 API 연결을 시도하고 실패하면 최근 기온 기반 추정값으로 자동 전환합니다.
+    </div>
+
+    <div class="author">작성자 : 노론리 한량</div>
+</div>
+
+<script>
+const CONFIG = {
+    forecastApi:"https://api.open-meteo.com/v1/forecast",
+    archiveApi:"https://archive-api.open-meteo.com/v1/archive",
+    waterApiEndpoint:"",
+};
+
+const appToday = new Date();
+appToday.setHours(0,0,0,0);
+
+const minDate = new Date(appToday);
+minDate.setDate(minDate.getDate() - 7);
+
+const maxDate = new Date(appToday);
+maxDate.setDate(maxDate.getDate() + 14);
+const themes = {
+    ssogari: {
+        bgMain:"#0f172a",
+        bgCard:"#1e293b",
+        accent:"#38bdf8",
+        textMain:"#f8fafc",
+        textMuted:"#94a3b8",
+        blue:"#60a5fa"
+    },
+    megi: {
+        bgMain:"#16051f",
+        bgCard:"#2e1240",
+        accent:"#c084fc",
+        textMain:"#faf5ff",
+        textMuted:"#d8b4fe",
+        blue:"#f0abfc"
+    },
+    kkeokji: {
+        bgMain:"#052e16",
+        bgCard:"#064e3b",
+        accent:"#86efac",
+        textMain:"#ecfdf5",
+        textMuted:"#bbf7d0",
+        blue:"#67e8f9"
+    }
+};
+
+const spots = {
+    pyeongchang:{ name:"평창군 평창강", lat:37.55, lon:128.35, riverType:"clear_fast" },
+    joyang:{ name:"정선군 조양강", lat:37.38, lon:128.66, riverType:"clear_fast" },
+    yeongwol_donggang:{ name:"영월군 동강", lat:37.18, lon:128.47, riverType:"clear_fast" },
+    danyang_namhan:{ name:"단양군 남한강", lat:36.98, lon:128.36, riverType:"large_river" },
+    custom:{ name:"현재/GPS 위치", lat:37.55, lon:128.35, riverType:"unknown" }
+};
+
+const fishInfo = {
+    ssogari:{ name:"쏘가리", base:74, bestWater:[18,24], activeHours:[5,6,7,19,20,21,22] },
+    megi:{ name:"메기", base:76, bestWater:[20,28], activeHours:[20,21,22,23,0,1,2,3,4] },
+    kkeokji:{ name:"꺽지", base:65, bestWater:[16,23], activeHours:[10,11,12,13,14,15,16,17] }
+};
+
+let currentFish = "ssogari";
+let currentDate = new Date(appToday);
+let currentSpotKey = "pyeongchang";
+let feedingChart = null;
+
+function applyTheme(fish) {
+    const t = themes[fish];
+
+    document.documentElement.style.setProperty("--bg-main", t.bgMain);
+    document.documentElement.style.setProperty("--bg-card", t.bgCard);
+    document.documentElement.style.setProperty("--accent", t.accent);
+    document.documentElement.style.setProperty("--text-main", t.textMain);
+    document.documentElement.style.setProperty("--text-muted", t.textMuted);
+    document.documentElement.style.setProperty("--blue", t.blue);
+    document.querySelector('meta[name="theme-color"]').setAttribute("content", t.bgMain);
+
+    if (feedingChart) {
+        feedingChart.destroy();
+        feedingChart = null;
+    }
+}
+
+function pad(n) {
+    return String(n).padStart(2,"0");
+}
+
+function toDateKey(date) {
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+}
+
+function dateOnly(date) {
+    const d = new Date(date);
+    d.setHours(0,0,0,0);
+    return d;
+}
+
+function clamp(v,min,max) {
+    return Math.min(max,Math.max(min,v));
+}
+
+function avg(arr) {
+    const valid = arr.filter(v => typeof v === "number" && !Number.isNaN(v));
+    if (!valid.length) return 0;
+    return valid.reduce((a,b)=>a+b,0) / valid.length;
+}
+
+function getCssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function getMoonPhaseAge(date) {
+    const knownNewMoon = new Date("2000-01-06T18:14:00Z");
+    const synodicMonth = 29.53058867;
+    const diffDays = (date.getTime() - knownNewMoon.getTime()) / 86400000;
+    return ((diffDays % synodicMonth) + synodicMonth) % synodicMonth;
+}
+
+function getMoonPhaseName(age) {
+    if (age < 1.5 || age > 28) return "삭";
+    if (age < 6.5) return "초승";
+    if (age < 9.5) return "상현";
+    if (age < 13.5) return "차는 달";
+    if (age < 16.5) return "보름";
+    if (age < 21.5) return "기우는 달";
+    if (age < 24.5) return "하현";
+    return "그믐";
+}
+
+function getMoonEffect(age, fish) {
+    const isFull = age >= 13.5 && age <= 16.5;
+    const isNew = age < 1.5 || age > 28;
+
+    if (fish === "megi" && isNew) return 12;
+    if (fish === "megi" && isFull) return -3;
+    if (fish === "ssogari" && isFull) return 8;
+    if (fish === "ssogari" && isNew) return 4;
+    if (fish === "kkeokji" && isFull) return 2;
+
+    return Math.sin((age / 29.53058867) * Math.PI * 2) * 4;
+}
+
+async function fetchWeatherData(date, spot) {
+    const target = dateOnly(date);
+    const targetKey = toDateKey(target);
+    const isPast = target < appToday;
+
+    const base = isPast ? CONFIG.archiveApi : CONFIG.forecastApi;
+
+    const url =
+        `${base}?latitude=${spot.lat}&longitude=${spot.lon}` +
+        `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max` +
+        `&hourly=temperature_2m,apparent_temperature,pressure_msl,precipitation,wind_speed_10m,wind_direction_10m` +
+        `&start_date=${targetKey}&end_date=${targetKey}` +
+        `&timezone=Asia%2FSeoul`;
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("weather api failed");
+    return await res.json();
+}
+
+function extractWeather(data, date) {
+    const key = toDateKey(date);
+    const dIdx = data.daily.time.indexOf(key);
+    const dayStart = data.hourly.time.findIndex(t => t.startsWith(key + "T00"));
+
+    const dayHours = dayStart >= 0
+        ? {
+            temp:data.hourly.temperature_2m.slice(dayStart, dayStart + 24),
+            feels:data.hourly.apparent_temperature.slice(dayStart, dayStart + 24),
+            pressure:data.hourly.pressure_msl.slice(dayStart, dayStart + 24),
+            rain:data.hourly.precipitation.slice(dayStart, dayStart + 24),
+            wind:data.hourly.wind_speed_10m.slice(dayStart, dayStart + 24),
+            windDir:data.hourly.wind_direction_10m.slice(dayStart, dayStart + 24)
+        }
+        : null;
+
+    const maxTemp = data.daily.temperature_2m_max[dIdx];
+    const minTemp = data.daily.temperature_2m_min[dIdx];
+
+    return {
+        date:key,
+        tempAvg:dayHours ? avg(dayHours.temp) : (maxTemp + minTemp) / 2,
+        feelsAvg:dayHours ? avg(dayHours.feels) : (maxTemp + minTemp) / 2,
+        tempMax:maxTemp,
+        tempMin:minTemp,
+        pressureAvg:dayHours ? avg(dayHours.pressure) : 1013,
+        pressureTrend:dayHours ? dayHours.pressure[23] - dayHours.pressure[0] : 0,
+        rainSum:data.daily.precipitation_sum[dIdx] ?? 0,
+        windMax:data.daily.wind_speed_10m_max[dIdx] ?? 0,
+        hourly:dayHours
+    };
+}
+
+async function fetchActualWaterData(spot) {
+    if (!CONFIG.waterApiEndpoint) throw new Error("no water api endpoint");
+
+    const url =
+        `${CONFIG.waterApiEndpoint}?lat=${spot.lat}&lon=${spot.lon}&spot=${encodeURIComponent(spot.name)}`;
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("water api failed");
+
+    const data = await res.json();
+
+    if (typeof data.waterTemp !== "number") {
+        throw new Error("invalid water api response");
+    }
+
+    return {
+        waterTemp:data.waterTemp,
+        waterLevel:typeof data.waterLevel === "number" ? data.waterLevel : null,
+        source:data.source || "actual"
+    };
+}
+
+function estimateWaterTemp(weather, spot) {
+    let value = weather.tempAvg;
+
+    if (spot.riverType === "clear_fast") value -= 1.7;
+    if (spot.riverType === "large_river") value -= 0.8;
+    if (weather.rainSum > 10) value -= 1.0;
+    if (weather.rainSum > 30) value -= 2.0;
+
+    return Number(value.toFixed(1));
+}
+
+function estimateWaterLevel(rainSum) {
+    if (rainSum >= 50) return { text:"급상승 가능", score:-12 };
+    if (rainSum >= 20) return { text:"상승", score:-5 };
+    if (rainSum >= 5) return { text:"소폭 상승", score:2 };
+    return { text:"안정", score:4 };
+}
+
+async function getWaterData(spot, weather) {
+    try {
+        const actual = await fetchActualWaterData(spot);
+
+        return {
+            waterTemp:actual.waterTemp,
+            waterLevel:actual.waterLevel,
+            waterLevelText:actual.waterLevel ? `${actual.waterLevel} m` : "실측",
+            source:"실측 API"
+        };
+    } catch {
+        const waterLevel = estimateWaterLevel(weather.rainSum);
+
+        return {
+            waterTemp:estimateWaterTemp(weather, spot),
+            waterLevel:null,
+            waterLevelText:waterLevel.text,
+            waterLevelScore:waterLevel.score,
+            source:"기온 기반 추정"
+        };
+    }
+}
+
+function calculateScore(fish, weather, water, moonAge) {
+    const f = fishInfo[fish];
+    let score = f.base;
+
+    score += getMoonEffect(moonAge, fish);
+
+    const bestMin = f.bestWater[0];
+    const bestMax = f.bestWater[1];
+    const wt = water.waterTemp;
+
+    if (wt >= bestMin && wt <= bestMax) {
+        score += 12;
+    } else {
+        score -= Math.min(18, Math.abs(((bestMin + bestMax) / 2) - wt) * 2);
+    }
+
+    if (weather.pressureAvg < 1010) score += fish === "megi" ? 8 : 4;
+    if (weather.pressureTrend < -2) score += 6;
+    if (weather.pressureTrend > 3) score -= 5;
+
+    if (weather.rainSum > 0 && weather.rainSum <= 10) {
+        score += fish === "megi" ? 10 : 5;
+    }
+
+    if (weather.rainSum > 30) {
+        score -= fish === "megi" ? 3 : 12;
+    }
+
+    if (weather.windMax >= 3 && weather.windMax <= 7) score += 4;
+    if (weather.windMax > 11) score -= 10;
+
+    score += water.waterLevelScore || 0;
+
+    return clamp(Math.round(score), 25, 98);
+}
+
+function generateHourlyFeeding(fish, baseScore, moonAge, weather) {
+    const f = fishInfo[fish];
+    const rows = [];
+
+    for (let h = 0; h < 24; h++) {
+        let value = baseScore - 8;
+
+        if (f.activeHours.includes(h)) value += 15;
+
+        const dawn = h >= 5 && h <= 7;
+        const dusk = h >= 18 && h <= 21;
+        const night = h >= 21 || h <= 4;
+        const midday = h >= 11 && h <= 15;
+
+        if (fish === "ssogari" && (dawn || dusk)) value += 8;
+        if (fish === "megi" && night) value += 10;
+        if (fish === "kkeokji" && midday) value += 8;
+
+        const hourlyRain = weather.hourly?.rain?.[h] || 0;
+        const hourlyWind = weather.hourly?.wind?.[h] || weather.windMax;
+
+        if (hourlyRain > 0 && hourlyRain <= 2) value += fish === "megi" ? 6 : 3;
+        if (hourlyRain > 8) value -= 7;
+        if (hourlyWind > 10) value -= 6;
+
+        value += Math.sin(((h - 6) / 24) * Math.PI * 2) * (fish === "kkeokji" ? 5 : 2);
+        value += getMoonEffect(moonAge, fish) * 0.4;
+
+        rows.push({
+            hour:h,
+            label:`${pad(h)}시`,
+            probability:clamp(Math.round(value), 5, 100)
+        });
+    }
+
+    return rows;
+}
+
+function getTopWindows(hourly) {
+    const sorted = [...hourly]
+        .sort((a,b)=>b.probability-a.probability)
+        .slice(0,4);
+
+    sorted.sort((a,b)=>a.hour-b.hour);
+
+    const groups = [];
+
+    sorted.forEach(item => {
+        const last = groups[groups.length - 1];
+
+        if (last && item.hour <= last.end + 1) {
+            last.end = item.hour;
+            last.peak = Math.max(last.peak, item.probability);
+        } else {
+            groups.push({
+                start:item.hour,
+                end:item.hour,
+                peak:item.probability
+            });
+        }
+    });
+
+    return groups.slice(0,2);
+}
+
+function drawFeedingChart(rows) {
+    const ctx = document.getElementById("feedingChart");
+    const textMain = getCssVar("--text-main");
+    const textMuted = getCssVar("--text-muted");
+    const accent = getCssVar("--accent");
+
+    if (feedingChart) feedingChart.destroy();
+
+    feedingChart = new Chart(ctx, {
+        type:"line",
+        data:{
+            labels:rows.map(r=>r.label),
+            datasets:[{
+                label:"입질 확률",
+                data:rows.map(r=>r.probability),
+                tension:0.35,
+                fill:true,
+                borderColor:accent,
+                backgroundColor:"rgba(56,189,248,.18)",
+                pointBackgroundColor:accent,
+                pointBorderColor:accent
+            }]
+        },
+        options:{
+            responsive:true,
+            plugins:{
+                legend:{ labels:{ color:textMain } },
+                tooltip:{ callbacks:{ label:ctx=>`${ctx.raw}%` } }
+            },
+            scales:{
+                x:{
+                    ticks:{ color:textMuted, maxRotation:0, autoSkip:true },
+                    grid:{ color:"rgba(255,255,255,.08)" }
+                },
+                y:{
+                    min:0,
+                    max:100,
+                    ticks:{ color:textMuted, callback:v=>v+"%" },
+                    grid:{ color:"rgba(255,255,255,.1)" }
+                }
+            }
+        }
+    });
+}
+
+function renderTimeline(windows, fish, moonName, weather, water) {
+    const html = windows.map(w => {
+        const start = `${pad(w.start)}:00`;
+        const end = `${pad((w.end + 1) % 24)}:00`;
+
+        let reason = "";
+
+        if (fish === "ssogari") {
+            reason = "여명/해질녘 광량 변화와 베이트피시 이동이 겹치며 여울 끝, 수중 암반, 브레이크 라인 공략 가치가 높습니다.";
+        } else if (fish === "megi") {
+            reason = "야간 저조도와 약한 강수·저기압 조건에서 측선 감각 기반 먹이활동이 강해질 가능성이 큽니다.";
+        } else {
+            reason = "일조량과 수온 상승으로 돌무더기, 평여울, 얕은 런 구간의 시각 사냥 반응이 좋아질 수 있습니다.";
+        }
+
+        return `
+            <div class="timeline-item">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <strong>${start} ~ ${end}</strong>
+                    <span class="type-tag ${w.peak >= 80 ? "type-major" : "type-minor"}">
+                        ${w.peak >= 80 ? "Major" : "Minor"}
+                    </span>
+                </div>
+                <div class="time-reason">${reason}</div>
+                <div class="note">
+                    ● ${moonName} · 수온 ${water.waterTemp}°C · 강수 ${weather.rainSum}mm
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    document.getElementById("timeline-contents").innerHTML =
+        html || "강한 피딩 타임이 약합니다. 짧은 탐색 위주가 좋습니다.";
+}
+
+function getStatus(score) {
+    if (score >= 88) return { text:"🔥 최고 활성", color:"#22c55e" };
+    if (score >= 75) return { text:"🌊 좋은 컨디션", color:"#eab308" };
+    if (score >= 60) return { text:"🎯 포인트 선별", color:"#fb923c" };
+    return { text:"⚠️ 전략 필요", color:"#ef4444" };
+}
+
+function getScoreColor(score) {
+    if (score >= 88) return "#fbbf24";
+    if (score >= 75) return "#4ade80";
+    if (score >= 60) return "#fb923c";
+    return "#94a3b8";
+}
+
+function getRainStrategyText(fish, weather) {
+    const rain = weather.rainSum;
+
+    if (rain > 0 && rain <= 10) {
+        if (fish === "megi") {
+            return " 약한 비 예보가 있어 메기의 경계심이 낮아지고 야간 먹이활동이 강해질 수 있습니다.";
+        }
+        if (fish === "ssogari") {
+            return " 약한 비 예보가 있어 수면 경계심이 줄고 여울 끝·탁수 경계선에서 반응이 좋아질 수 있습니다.";
+        }
+        return " 약한 비 예보가 있지만 꺽지는 탁도가 심하지 않은 얕은 여울과 돌무더기 주변을 짧게 공략하는 편이 좋습니다.";
+    }
+
+    if (rain > 10 && rain <= 30) {
+        return " 비 예보가 다소 있어 유속 증가와 탁수 가능성이 있습니다. 본류보다는 합수부 가장자리, 완만한 소, 안전한 연안을 우선 확인하세요.";
+    }
+
+    if (rain > 30) {
+        return " 강수량이 많아 탁수와 급격한 수위 상승 가능성이 큽니다. 무리한 입수는 피하고 안전한 고지대 포인트 위주로 접근하세요.";
+    }
+
+    return " 비 예보가 거의 없어 물색 변화는 크지 않을 가능성이 높습니다.";
+}
+
+function renderStrategy(score, fish, weather, water, windows) {
+    const fishName = fishInfo[fish].name;
+    const best = windows[0]
+        ? `${pad(windows[0].start)}시~${pad((windows[0].end + 1) % 24)}시`
+        : "짧은 탐색";
+
+    let text = "";
+
+    if (score >= 88) {
+        text = `오늘은 ${fishName} 출조 강추입니다. 핵심 시간은 ${best}, 1급 포인트를 오래 붙잡고 큰 루어부터 확인하세요.`;
+    } else if (score >= 75) {
+        text = `${fishName} 조건이 좋습니다. ${best}에 집중하고, 반응이 없으면 수심·유속 변화를 빠르게 바꾸세요.`;
+    } else if (score >= 60) {
+        text = `무난하지만 포인트 선별이 중요합니다. 수온 ${water.waterTemp}°C, 풍속 ${weather.windMax.toFixed(1)}km/h 기준으로 바람 맞는 연안과 구조물 위주가 좋습니다.`;
+    } else {
+        text = `조건이 까다롭습니다. 장시간 낚시보다 짧은 피딩 타임만 노리고, 채비는 작게 낮추는 전략이 유리합니다.`;
+    }
+
+    text += getRainStrategyText(fish, weather);
+
+    document.getElementById("strategy").innerText = text;
+    document.getElementById("one-line-advice").innerText = text;
+}
+
+function updateDateButtons() {
+    const d = dateOnly(currentDate);
+
+    document.getElementById("prev-btn").disabled = d <= minDate;
+    document.getElementById("next-btn").disabled = d >= maxDate;
+
+    document.getElementById("date-range-note").innerText =
+        `${toDateKey(minDate)} ~ ${toDateKey(maxDate)} 조회 가능`;
+}
+
+async function updateDashboard() {
+    const spot = spots[currentSpotKey];
+
+    updateDateButtons();
+
+    document.getElementById("display-date").innerText =
+        `${currentDate.getFullYear()}년 ${currentDate.getMonth()+1}월 ${currentDate.getDate()}일`;
+
+    document.getElementById("fish-name").innerText = fishInfo[currentFish].name;
+    document.getElementById("location-name").innerText = `📍 ${spot.name}`;
+
+    try {
+        const data = await fetchWeatherData(currentDate, spot);
+        const weather = extractWeather(data, currentDate);
+        const water = await getWaterData(spot, weather);
+
+        const moonAge = getMoonPhaseAge(currentDate);
+        const moonName = getMoonPhaseName(moonAge);
+
+        const score = calculateScore(currentFish, weather, water, moonAge);
+        const status = getStatus(score);
+
+        document.getElementById("score-text").innerHTML =
+            `${score}<span style="font-size:22px">%</span>`;
+        document.getElementById("score-text").style.color = getScoreColor(score);
+
+        const statusEl = document.getElementById("status-text");
+        statusEl.innerText = status.text;
+        statusEl.style.background = status.color;
+        statusEl.style.color = "#000";
+
+        document.getElementById("val-moon").innerText =
+            `월령 ${moonAge.toFixed(1)} · ${moonName}`;
+
+        document.getElementById("moon-influence").innerHTML =
+            moonName === "보름"
+            ? "밝은 달빛 · 쏘가리 여명/야간 영향 ↑"
+            : moonName === "삭" || moonName === "그믐"
+            ? "어두운 밤 · 메기 경계심 ↓"
+            : "중간 월령 · 시간대 영향 보통";
+
+        document.getElementById("val-temp").innerText =
+            `${weather.tempAvg.toFixed(1)}°C`;
+
+        document.getElementById("val-rain").innerText =
+            `강수 ${weather.rainSum}mm`;
+
+        document.getElementById("val-pressure").innerText =
+            `${Math.round(weather.pressureAvg)} hPa`;
+
+        document.getElementById("val-wind").innerText =
+            `최대풍속 ${weather.windMax.toFixed(1)} km/h`;
+
+        document.getElementById("val-watertemp").innerText =
+            `${water.waterTemp}°C`;
+
+        document.getElementById("val-waterlevel").innerText =
+            `${water.waterLevelText} · ${water.source}`;
+
+        const hourly = generateHourlyFeeding(currentFish, score, moonAge, weather);
+        const windows = getTopWindows(hourly);
+
+        drawFeedingChart(hourly);
+        renderTimeline(windows, currentFish, moonName, weather, water);
+        renderStrategy(score, currentFish, weather, water, windows);
+
+    } catch (err) {
+        document.getElementById("timeline-contents").innerText =
+            "데이터를 불러오지 못했습니다. 네트워크 상태 또는 API 응답을 확인하세요.";
+        console.error(err);
+    }
+}
+
+function switchFish(fish) {
+    currentFish = fish;
+    applyTheme(fish);
+
+    document.querySelectorAll(".fish-tab")
+        .forEach(t => t.classList.remove("active"));
+
+    document.getElementById("tab-" + fish).classList.add("active");
+
+    updateDashboard();
+}
+
+function changeDate(dir) {
+    const next = new Date(currentDate);
+    next.setDate(next.getDate() + dir);
+    next.setHours(0,0,0,0);
+
+    if (next < minDate || next > maxDate) {
+        return;
+    }
+
+    currentDate = next;
+    updateDashboard();
+}
+
+function changeSpot() {
+    currentSpotKey = document.getElementById("spot-select").value;
+    updateDashboard();
+}
+
+function useGPS() {
+    if (!navigator.geolocation) {
+        alert("GPS를 지원하지 않는 브라우저입니다.");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            spots.custom.lat = pos.coords.latitude;
+            spots.custom.lon = pos.coords.longitude;
+            spots.custom.name =
+                document.getElementById("custom-name").value || "현재/GPS 위치";
+
+            currentSpotKey = "custom";
+            document.getElementById("spot-select").value = "custom";
+
+            updateDashboard();
+        },
+        () => {
+            alert("위치 권한을 허용해야 GPS를 사용할 수 있습니다.");
+        }
+    );
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    applyTheme(currentFish);
+    updateDashboard();
+});
+</script>
+</body>
+</html>
