@@ -4,8 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="theme-color" content="#0f172a" />
-<title>노론한량-솔루나 실전낚시 PRO</title>
+<title>한량낚시</title>
 
+<meta name="application-name" content="한량낚시" />
 <link rel="icon" href="./icon.png" type="image/png" />
 <link rel="shortcut icon" href="./icon.png" type="image/png" />
 <link rel="apple-touch-icon" href="./icon.png" />
@@ -126,6 +127,16 @@ select,input {
     font-weight:900;
     margin:18px 4px 8px;
 }
+.basis-note {
+    font-size:14px;
+    font-weight:900;
+    color:var(--blue);
+}
+.value-pair {
+    font-size:16px;
+    font-weight:900;
+    line-height:1.35;
+}
 .data-grid {
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -245,7 +256,7 @@ select,input {
         <div id="one-line-advice" style="margin-top:12px;font-size:12.8px;color:var(--text-muted);line-height:1.45"></div>
     </div>
 
-    <div class="section-title">천문 · 기상 · 수문 분석</div>
+    <div class="section-title">천문 · 기상 · 수온 분석 <span id="basis-note" class="basis-note">(현재값 --:--기준)</span></div>
     <div class="data-grid">
         <div class="data-item">
             <div class="data-label">실제 월령 / 달상</div>
@@ -253,17 +264,17 @@ select,input {
             <div class="note" id="moon-influence"></div>
         </div>
         <div class="data-item">
-            <div class="data-label">기온 / 강수</div>
+            <div class="data-label" id="temp-label">현재기온 / 현재강수</div>
             <div class="data-value" id="val-temp"></div>
             <div class="note" id="val-rain"></div>
         </div>
         <div class="data-item">
-            <div class="data-label">기압 / 풍속</div>
+            <div class="data-label" id="pressure-label">현재기압 / 현재풍속</div>
             <div class="data-value" id="val-pressure"></div>
             <div class="note" id="val-wind"></div>
         </div>
         <div class="data-item">
-            <div class="data-label">하천 수온 / 수위</div>
+            <div class="data-label" id="water-label">현재 추정수온 / 수위</div>
             <div class="data-value" id="val-watertemp"></div>
             <div class="note" id="val-waterlevel"></div>
         </div>
@@ -281,11 +292,13 @@ select,input {
     <div class="card strategy-card" id="strategy"></div>
 
     <div class="footer-note">
+        ※ 오늘 날짜는 현재값, 과거 날짜는 당시 관측/평균값, 미래 날짜는 예보값을 사용합니다.
+        <br>
         ※ 날짜 이동 범위는 오늘 기준 과거 1주일, 미래 2주일까지입니다.
-        과거 날짜는 과거 기상 데이터, 미래 날짜는 예보 데이터를 사용합니다.
         <br><br>
-        ※ 실제 수온/수위 API는 공공데이터 키 또는 자체 서버가 필요합니다.
-        이 코드는 API 연결을 시도하고 실패하면 최근 기온 기반 추정값으로 자동 전환합니다.
+        ※ 실제 수온/수위 API는 환경부/WAMIS 또는 자체 서버가 필요합니다.
+        <br>
+        ※ 이 코드는 API 연결을 시도하고 실패하면 최근 7일 평균기온 기반 추정값으로 자동 전환합니다.
     </div>
 
     <div class="author">작성자 : 노론리 한량</div>
@@ -295,6 +308,20 @@ select,input {
 const CONFIG = {
     forecastApi:"https://api.open-meteo.com/v1/forecast",
     archiveApi:"https://archive-api.open-meteo.com/v1/archive",
+
+    /*
+      환경부/WAMIS/자체 서버 실측 수온·수위 API 연결 자리입니다.
+
+      예시 응답:
+      {
+        "waterTemp": 18.4,
+        "waterLevel": 1.23,
+        "source": "WAMIS"
+      }
+
+      브라우저에서 공공데이터 API를 직접 호출하면 CORS 또는 API 키 노출 문제가 생길 수 있어
+      실제 서비스에서는 본인 서버를 중계로 두는 것을 추천합니다.
+    */
     waterApiEndpoint:"",
 };
 
@@ -306,6 +333,7 @@ minDate.setDate(minDate.getDate() - 7);
 
 const maxDate = new Date(appToday);
 maxDate.setDate(maxDate.getDate() + 14);
+
 const themes = {
     ssogari: {
         bgMain:"#0f172a",
@@ -313,7 +341,8 @@ const themes = {
         accent:"#38bdf8",
         textMain:"#f8fafc",
         textMuted:"#94a3b8",
-        blue:"#60a5fa"
+        blue:"#60a5fa",
+        chartFill:"rgba(56,189,248,.18)"
     },
     megi: {
         bgMain:"#16051f",
@@ -321,7 +350,8 @@ const themes = {
         accent:"#c084fc",
         textMain:"#faf5ff",
         textMuted:"#d8b4fe",
-        blue:"#f0abfc"
+        blue:"#f0abfc",
+        chartFill:"rgba(192,132,252,.18)"
     },
     kkeokji: {
         bgMain:"#052e16",
@@ -329,7 +359,8 @@ const themes = {
         accent:"#86efac",
         textMain:"#ecfdf5",
         textMuted:"#bbf7d0",
-        blue:"#67e8f9"
+        blue:"#67e8f9",
+        chartFill:"rgba(134,239,172,.18)"
     }
 };
 
@@ -377,10 +408,24 @@ function toDateKey(date) {
     return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
 }
 
+function toDateTimeLabel(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function dateOnly(date) {
     const d = new Date(date);
     d.setHours(0,0,0,0);
     return d;
+}
+
+function getDateMode(date) {
+    const d = dateOnly(date);
+    if (d.getTime() === appToday.getTime()) return "today";
+    if (d < appToday) return "past";
+    return "future";
 }
 
 function clamp(v,min,max) {
@@ -391,6 +436,11 @@ function avg(arr) {
     const valid = arr.filter(v => typeof v === "number" && !Number.isNaN(v));
     if (!valid.length) return 0;
     return valid.reduce((a,b)=>a+b,0) / valid.length;
+}
+
+function sum(arr) {
+    const valid = arr.filter(v => typeof v === "number" && !Number.isNaN(v));
+    return valid.reduce((a,b)=>a+b,0);
 }
 
 function getCssVar(name) {
@@ -429,17 +479,26 @@ function getMoonEffect(age, fish) {
 }
 
 async function fetchWeatherData(date, spot) {
+    const mode = getDateMode(date);
     const target = dateOnly(date);
     const targetKey = toDateKey(target);
-    const isPast = target < appToday;
 
-    const base = isPast ? CONFIG.archiveApi : CONFIG.forecastApi;
+    let start = new Date(target);
+    start.setDate(start.getDate() - 7);
 
-    const url =
+    const base = mode === "past" ? CONFIG.archiveApi : CONFIG.forecastApi;
+
+    let url =
         `${base}?latitude=${spot.lat}&longitude=${spot.lon}` +
         `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max` +
-        `&hourly=temperature_2m,apparent_temperature,pressure_msl,precipitation,wind_speed_10m,wind_direction_10m` +
-        `&start_date=${targetKey}&end_date=${targetKey}` +
+        `&hourly=temperature_2m,apparent_temperature,pressure_msl,precipitation,wind_speed_10m,wind_direction_10m`;
+
+    if (mode === "today") {
+        url += `&current=temperature_2m,apparent_temperature,pressure_msl,precipitation,wind_speed_10m,wind_direction_10m`;
+    }
+
+    url +=
+        `&start_date=${toDateKey(start)}&end_date=${targetKey}` +
         `&timezone=Asia%2FSeoul`;
 
     const res = await fetch(url);
@@ -448,7 +507,9 @@ async function fetchWeatherData(date, spot) {
 }
 
 function extractWeather(data, date) {
+    const mode = getDateMode(date);
     const key = toDateKey(date);
+
     const dIdx = data.daily.time.indexOf(key);
     const dayStart = data.hourly.time.findIndex(t => t.startsWith(key + "T00"));
 
@@ -466,17 +527,65 @@ function extractWeather(data, date) {
     const maxTemp = data.daily.temperature_2m_max[dIdx];
     const minTemp = data.daily.temperature_2m_min[dIdx];
 
+    const current = data.current || null;
+
+    const recentTemps = [];
+    const targetIdx = dIdx;
+
+    if (targetIdx >= 0) {
+        const startIdx = Math.max(0, targetIdx - 6);
+        for (let i = startIdx; i <= targetIdx; i++) {
+            const mx = data.daily.temperature_2m_max[i];
+            const mn = data.daily.temperature_2m_min[i];
+            if (typeof mx === "number" && typeof mn === "number") {
+                recentTemps.push((mx + mn) / 2);
+            }
+        }
+    }
+
+    let tempValue;
+    let feelsValue;
+    let pressureValue;
+    let windValue;
+    let rainValue;
+    let displayType;
+    let updateTime = "";
+
+    if (mode === "today" && current) {
+        tempValue = current.temperature_2m;
+        feelsValue = current.apparent_temperature;
+        pressureValue = current.pressure_msl;
+        windValue = current.wind_speed_10m;
+        rainValue = current.precipitation ?? 0;
+        displayType = "현재값";
+        updateTime = toDateTimeLabel(current.time);
+    } else {
+        tempValue = dayHours ? avg(dayHours.temp) : (maxTemp + minTemp) / 2;
+        feelsValue = dayHours ? avg(dayHours.feels) : (maxTemp + minTemp) / 2;
+        pressureValue = dayHours ? avg(dayHours.pressure) : 1013;
+        windValue = dayHours ? avg(dayHours.wind) : (data.daily.wind_speed_10m_max[dIdx] ?? 0);
+        rainValue = data.daily.precipitation_sum[dIdx] ?? 0;
+        displayType = mode === "past" ? "당시 평균값" : "예상 평균값";
+    }
+
     return {
+        mode,
         date:key,
-        tempAvg:dayHours ? avg(dayHours.temp) : (maxTemp + minTemp) / 2,
-        feelsAvg:dayHours ? avg(dayHours.feels) : (maxTemp + minTemp) / 2,
+        tempValue,
+        feelsValue,
         tempMax:maxTemp,
         tempMin:minTemp,
-        pressureAvg:dayHours ? avg(dayHours.pressure) : 1013,
+        pressureValue,
+        pressureAvg:dayHours ? avg(dayHours.pressure) : pressureValue,
         pressureTrend:dayHours ? dayHours.pressure[23] - dayHours.pressure[0] : 0,
-        rainSum:data.daily.precipitation_sum[dIdx] ?? 0,
-        windMax:data.daily.wind_speed_10m_max[dIdx] ?? 0,
-        hourly:dayHours
+        rainValue,
+        rainSum:data.daily.precipitation_sum[dIdx] ?? rainValue,
+        windValue,
+        windMax:data.daily.wind_speed_10m_max[dIdx] ?? windValue,
+        displayType,
+        updateTime,
+        hourly:dayHours,
+        recentTemps
     };
 }
 
@@ -503,14 +612,24 @@ async function fetchActualWaterData(spot) {
 }
 
 function estimateWaterTemp(weather, spot) {
-    let value = weather.tempAvg;
+    const temps = weather.recentTemps && weather.recentTemps.length
+        ? weather.recentTemps
+        : [weather.tempValue];
 
-    if (spot.riverType === "clear_fast") value -= 1.7;
-    if (spot.riverType === "large_river") value -= 0.8;
-    if (weather.rainSum > 10) value -= 1.0;
-    if (weather.rainSum > 30) value -= 2.0;
+    const todayTemp = weather.tempValue;
+    const avg3 = avg(temps.slice(-3));
+    const avg7 = avg(temps);
 
-    return Number(value.toFixed(1));
+    let value = (todayTemp * 0.25) + (avg3 * 0.45) + (avg7 * 0.30);
+
+    if (spot.riverType === "clear_fast") value -= 5.5;
+    else if (spot.riverType === "large_river") value -= 4.2;
+    else value -= 4.8;
+
+    if (weather.rainSum > 20) value -= 1.5;
+    if (weather.rainSum > 50) value -= 3.0;
+
+    return Number(clamp(value, 3, 30).toFixed(1));
 }
 
 function estimateWaterLevel(rainSum) {
@@ -528,17 +647,24 @@ async function getWaterData(spot, weather) {
             waterTemp:actual.waterTemp,
             waterLevel:actual.waterLevel,
             waterLevelText:actual.waterLevel ? `${actual.waterLevel} m` : "실측",
-            source:"실측 API"
+            source:`실측 API · ${actual.source}`,
+            isActual:true
         };
     } catch {
         const waterLevel = estimateWaterLevel(weather.rainSum);
+
+        let label = "추정";
+        if (weather.mode === "today") label = "현재 추정";
+        if (weather.mode === "past") label = "당시 추정";
+        if (weather.mode === "future") label = "예상 추정";
 
         return {
             waterTemp:estimateWaterTemp(weather, spot),
             waterLevel:null,
             waterLevelText:waterLevel.text,
             waterLevelScore:waterLevel.score,
-            source:"기온 기반 추정"
+            source:`${label} · 최근 7일 평균기온 기반`,
+            isActual:false
         };
     }
 }
@@ -559,7 +685,7 @@ function calculateScore(fish, weather, water, moonAge) {
         score -= Math.min(18, Math.abs(((bestMin + bestMax) / 2) - wt) * 2);
     }
 
-    if (weather.pressureAvg < 1010) score += fish === "megi" ? 8 : 4;
+    if (weather.pressureValue < 1010) score += fish === "megi" ? 8 : 4;
     if (weather.pressureTrend < -2) score += 6;
     if (weather.pressureTrend > 3) score -= 5;
 
@@ -571,8 +697,8 @@ function calculateScore(fish, weather, water, moonAge) {
         score -= fish === "megi" ? 3 : 12;
     }
 
-    if (weather.windMax >= 3 && weather.windMax <= 7) score += 4;
-    if (weather.windMax > 11) score -= 10;
+    if (weather.windValue >= 3 && weather.windValue <= 7) score += 4;
+    if (weather.windValue > 11) score -= 10;
 
     score += water.waterLevelScore || 0;
 
@@ -598,7 +724,7 @@ function generateHourlyFeeding(fish, baseScore, moonAge, weather) {
         if (fish === "kkeokji" && midday) value += 8;
 
         const hourlyRain = weather.hourly?.rain?.[h] || 0;
-        const hourlyWind = weather.hourly?.wind?.[h] || weather.windMax;
+        const hourlyWind = weather.hourly?.wind?.[h] || weather.windValue;
 
         if (hourlyRain > 0 && hourlyRain <= 2) value += fish === "megi" ? 6 : 3;
         if (hourlyRain > 8) value -= 7;
@@ -649,6 +775,7 @@ function drawFeedingChart(rows) {
     const textMain = getCssVar("--text-main");
     const textMuted = getCssVar("--text-muted");
     const accent = getCssVar("--accent");
+    const fill = themes[currentFish].chartFill;
 
     if (feedingChart) feedingChart.destroy();
 
@@ -662,7 +789,7 @@ function drawFeedingChart(rows) {
                 tension:0.35,
                 fill:true,
                 borderColor:accent,
-                backgroundColor:"rgba(56,189,248,.18)",
+                backgroundColor:fill,
                 pointBackgroundColor:accent,
                 pointBorderColor:accent
             }]
@@ -775,7 +902,7 @@ function renderStrategy(score, fish, weather, water, windows) {
     } else if (score >= 75) {
         text = `${fishName} 조건이 좋습니다. ${best}에 집중하고, 반응이 없으면 수심·유속 변화를 빠르게 바꾸세요.`;
     } else if (score >= 60) {
-        text = `무난하지만 포인트 선별이 중요합니다. 수온 ${water.waterTemp}°C, 풍속 ${weather.windMax.toFixed(1)}km/h 기준으로 바람 맞는 연안과 구조물 위주가 좋습니다.`;
+        text = `무난하지만 포인트 선별이 중요합니다. 수온 ${water.waterTemp}°C, 풍속 ${weather.windValue.toFixed(1)}km/h 기준으로 바람 맞는 연안과 구조물 위주가 좋습니다.`;
     } else {
         text = `조건이 까다롭습니다. 장시간 낚시보다 짧은 피딩 타임만 노리고, 채비는 작게 낮추는 전략이 유리합니다.`;
     }
@@ -796,6 +923,31 @@ function updateDateButtons() {
         `${toDateKey(minDate)} ~ ${toDateKey(maxDate)} 조회 가능`;
 }
 
+function updateWeatherLabels(weather, water) {
+    const basis = document.getElementById("basis-note");
+
+    if (weather.mode === "today") {
+        document.getElementById("temp-label").innerText = "현재기온 / 현재강수";
+        document.getElementById("pressure-label").innerText = "현재기압 / 현재풍속";
+        document.getElementById("water-label").innerText = water.isActual ? "실측 하천수온 / 수위" : "현재 추정수온 / 수위";
+        basis.innerText = `(현재값 ${weather.updateTime || "--:--"}기준)`;
+        return;
+    }
+
+    if (weather.mode === "past") {
+        document.getElementById("temp-label").innerText = "당시 평균기온 / 총강수";
+        document.getElementById("pressure-label").innerText = "당시 평균기압 / 평균풍속";
+        document.getElementById("water-label").innerText = water.isActual ? "실측 하천수온 / 수위" : "당시 추정수온 / 수위";
+        basis.innerText = "(당시 평균값)";
+        return;
+    }
+
+    document.getElementById("temp-label").innerText = "예상 평균기온 / 예상강수";
+    document.getElementById("pressure-label").innerText = "예상 평균기압 / 예상풍속";
+    document.getElementById("water-label").innerText = water.isActual ? "실측 하천수온 / 수위" : "예상 추정수온 / 수위";
+    basis.innerText = "(예상 평균값)";
+}
+
 async function updateDashboard() {
     const spot = spots[currentSpotKey];
 
@@ -811,6 +963,8 @@ async function updateDashboard() {
         const data = await fetchWeatherData(currentDate, spot);
         const weather = extractWeather(data, currentDate);
         const water = await getWaterData(spot, weather);
+
+        updateWeatherLabels(weather, water);
 
         const moonAge = getMoonPhaseAge(currentDate);
         const moonName = getMoonPhaseName(moonAge);
@@ -837,23 +991,21 @@ async function updateDashboard() {
             ? "어두운 밤 · 메기 경계심 ↓"
             : "중간 월령 · 시간대 영향 보통";
 
-        document.getElementById("val-temp").innerText =
-            `${weather.tempAvg.toFixed(1)}°C`;
+        document.getElementById("val-temp").innerHTML =
+            `<div class="value-pair">${weather.tempValue.toFixed(1)}℃ / ${weather.rainValue.toFixed(1)}mm</div>`;
 
-        document.getElementById("val-rain").innerText =
-            `강수 ${weather.rainSum}mm`;
+        document.getElementById("val-rain").innerText = "";
 
-        document.getElementById("val-pressure").innerText =
-            `${Math.round(weather.pressureAvg)} hPa`;
+        document.getElementById("val-pressure").innerHTML =
+            `<div class="value-pair">${Math.round(weather.pressureValue)}hPa / ${weather.windValue.toFixed(1)}km/h</div>`;
 
-        document.getElementById("val-wind").innerText =
-            `최대풍속 ${weather.windMax.toFixed(1)} km/h`;
+        document.getElementById("val-wind").innerText = "";
 
-        document.getElementById("val-watertemp").innerText =
-            `${water.waterTemp}°C`;
+        document.getElementById("val-watertemp").innerHTML =
+            `<div class="value-pair">${water.waterTemp}℃ / ${water.waterLevelText}</div>`;
 
         document.getElementById("val-waterlevel").innerText =
-            `${water.waterLevelText} · ${water.source}`;
+            water.source.includes("최근 7일 평균기온 기반") ? "최근 7일 평균기온 기반" : "";
 
         const hourly = generateHourlyFeeding(currentFish, score, moonAge, weather);
         const windows = getTopWindows(hourly);

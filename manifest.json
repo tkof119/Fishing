@@ -1,15 +1,18 @@
 {
-  "name": "노론한량-솔루나 실전낚시 PRO",
-  "short_name": "솔루나낚시",
+  "name": "한량낚시",
+  "short_name": "한량낚시",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
+  "description": "월령, 기상, 수온, 피딩타임 기반 민물낚시 예측 앱",
   "icons": [
     {
       "src": "./icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
