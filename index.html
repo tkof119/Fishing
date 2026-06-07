@@ -206,6 +206,105 @@ select,input {
     padding:18px 0 26px;
     opacity:.9;
 }
+
+.clickable-card {
+    cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease, background .12s ease;
+    border:1px solid rgba(255,255,255,.05);
+}
+.clickable-card:active {
+    transform:scale(.985);
+}
+.clickable-card:hover {
+    border-color:rgba(255,255,255,.18);
+}
+.tap-hint {
+    float:right;
+    font-size:10px;
+    color:var(--accent);
+    font-weight:900;
+}
+.info-modal {
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.62);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:9999;
+}
+.info-modal.show {
+    display:flex;
+}
+.info-modal-card {
+    width:min(460px, 100%);
+    max-height:82vh;
+    overflow:auto;
+    background:var(--bg-card);
+    color:var(--text-main);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:18px;
+    padding:15px;
+    box-shadow:0 20px 60px rgba(0,0,0,.42);
+}
+.info-modal-head {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+}
+.info-modal-title {
+    font-size:16px;
+    font-weight:900;
+    color:var(--accent);
+}
+.info-close-btn {
+    width:32px;
+    height:32px;
+    border:0;
+    border-radius:50%;
+    background:rgba(255,255,255,.1);
+    color:var(--text-main);
+    font-size:22px;
+    line-height:1;
+    cursor:pointer;
+}
+.info-table {
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+    overflow:hidden;
+    border-radius:12px;
+}
+.info-table th,
+.info-table td {
+    padding:8px 6px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    text-align:left;
+    vertical-align:top;
+}
+.info-table th {
+    color:var(--text-muted);
+    font-size:11px;
+    font-weight:900;
+}
+.info-stars {
+    color:var(--accent);
+    white-space:nowrap;
+    font-weight:900;
+}
+.info-summary {
+    margin-top:12px;
+    padding:10px 11px;
+    border-radius:12px;
+    background:rgba(255,255,255,.07);
+    font-size:12.5px;
+    line-height:1.5;
+    color:var(--text-main);
+}
+
 </style>
 </head>
 
@@ -256,25 +355,25 @@ select,input {
         <div id="one-line-advice" style="margin-top:12px;font-size:12.8px;color:var(--text-muted);line-height:1.45"></div>
     </div>
 
-    <div class="section-title">천문 · 기상 · 수온 분석 <span id="basis-note" class="basis-note">(현재값 --:--기준)</span></div>
+    <div class="section-title">천문 · 기상 · 수온 분석 <span id="basis-note" class="basis-note">(기상청 예보 · --:--기준)</span></div>
     <div class="data-grid">
-        <div class="data-item">
-            <div class="data-label">실제 월령 / 달상</div>
+        <div class="data-item clickable-card" onclick="showMoonActivityInfo()" role="button" tabindex="0">
+            <div class="data-label">실제 월령 / 달상 <span class="tap-hint">보기</span></div>
             <div class="data-value" id="val-moon"></div>
             <div class="note" id="moon-influence"></div>
         </div>
-        <div class="data-item">
-            <div class="data-label" id="temp-label">현재기온 / 현재강수</div>
+        <div class="data-item clickable-card" onclick="showAirTempActivityInfo()" role="button" tabindex="0">
+            <div class="data-label" id="temp-label">현재기온 / 현재강수 <span class="tap-hint">보기</span></div>
             <div class="data-value" id="val-temp"></div>
             <div class="note" id="val-rain"></div>
         </div>
-        <div class="data-item">
-            <div class="data-label" id="pressure-label">현재기압 / 현재풍속</div>
+        <div class="data-item clickable-card" onclick="showPressureActivityInfo()" role="button" tabindex="0">
+            <div class="data-label" id="pressure-label">현재기압 / 현재풍속 <span class="tap-hint">보기</span></div>
             <div class="data-value" id="val-pressure"></div>
             <div class="note" id="val-wind"></div>
         </div>
-        <div class="data-item">
-            <div class="data-label" id="water-label">현재 추정수온 / 수위</div>
+        <div class="data-item clickable-card" onclick="showWaterTempActivityInfo()" role="button" tabindex="0">
+            <div class="data-label" id="water-label">현재 추정수온 / 수위 <span class="tap-hint">보기</span></div>
             <div class="data-value" id="val-watertemp"></div>
             <div class="note" id="val-waterlevel"></div>
         </div>
@@ -287,6 +386,16 @@ select,input {
 
     <div class="section-title">예측 피딩 타임라인 & 타깃 근거</div>
     <div class="card" id="timeline-contents"></div>
+    <div class="info-modal" id="info-modal" onclick="closeInfoModal(event)">
+        <div class="info-modal-card" onclick="event.stopPropagation()">
+            <div class="info-modal-head">
+                <div id="info-modal-title" class="info-modal-title"></div>
+                <button class="info-close-btn" onclick="hideInfoModal()">×</button>
+            </div>
+            <div id="info-modal-body" class="info-modal-body"></div>
+        </div>
+    </div>
+
 <div class="footer-note">
         ※ 오늘 날짜는 현재값과 기상청 초단기예보 1시간 단위 자료를 사용합니다.
         <br>
@@ -979,6 +1088,207 @@ function renderStrategy(score, fish, weather, water, windows) {
     document.getElementById("one-line-advice").innerText = text;
 }
 
+const activityInfo = {
+    ssogari: {
+        moonTitle:"쏘가리 월령 활성도",
+        moonSummary:"쏘가리는 보름 전후와 그믐 전후가 좋고, 새벽·해질녘 피딩이 중요합니다.",
+        moonRows:[
+            ["0~2","삭","★★★★☆","어두운 밤, 경계심 감소"],
+            ["3~6","초승","★★★☆☆","새벽·해질녘 위주"],
+            ["7~9","상현","★★★☆☆","중간 활성"],
+            ["10~13","차는 달","★★★★☆","야간 사냥 증가"],
+            ["14~16","보름","★★★★★","달빛·조류 영향 강함"],
+            ["17~21","기우는 달","★★★★☆","밤 피딩 기대"],
+            ["22~24","하현","★★★☆☆","포인트 선별 필요"],
+            ["25~29","그믐","★★★★☆","어두운 밤, 대형 개체 기대"]
+        ],
+        waterTitle:"쏘가리 수온별 활성도",
+        waterSummary:"쏘가리 최적 수온은 18~24℃입니다. 25℃ 이상에서는 낮보다 새벽·해질녘·야간이 유리합니다.",
+        waterRows:[
+            ["5℃ 이하","★☆☆☆☆","매우 저활성"],
+            ["6~10℃","★★☆☆☆","깊은 곳 위주"],
+            ["11~15℃","★★★☆☆","서서히 반응 시작"],
+            ["16~18℃","★★★★☆","피딩 증가"],
+            ["18~24℃","★★★★★","최적 수온"],
+            ["25~27℃","★★★★☆","새벽·야간 유리"],
+            ["28℃ 이상","★★☆☆☆","고수온 스트레스"]
+        ],
+        airTitle:"쏘가리 기온별 활성도",
+        airSummary:"쏘가리는 기온 자체보다 수온과 광량 변화가 더 중요하지만, 봄·가을 15~25℃ 구간에서 출조 안정성이 가장 좋습니다.",
+        airRows:[
+            ["5℃ 이하","★☆☆☆☆","저수온기, 깊은 곳 위주"],
+            ["6~10℃","★★☆☆☆","짧은 피딩만 기대"],
+            ["11~15℃","★★★☆☆","수온 상승기, 반응 시작"],
+            ["16~25℃","★★★★★","최적 출조 기온대"],
+            ["26~30℃","★★★★☆","새벽·해질녘 유리"],
+            ["31℃ 이상","★★☆☆☆","낮 시간 고온 스트레스"]
+        ],
+        pressureTitle:"쏘가리 기압별 활성도",
+        pressureSummary:"쏘가리는 기압이 서서히 하강하거나 저기압 전후에 베이트피시가 움직일 때 반응이 좋아질 수 있습니다.",
+        pressureRows:[
+            ["급하강","★★★★☆","활성 증가 가능, 강풍·폭우는 주의"],
+            ["완만한 하강","★★★★★","피딩 기대 가장 좋음"],
+            ["안정","★★★★☆","포인트와 시간대 선별 중요"],
+            ["완만한 상승","★★★☆☆","반응이 짧아질 수 있음"],
+            ["급상승","★★☆☆☆","입질 둔화 가능"],
+            ["고기압 지속","★★★☆☆","맑은 날, 새벽·해질녘 위주"]
+        ]
+    },
+    megi: {
+        moonTitle:"메기 월령 활성도",
+        moonSummary:"메기는 삭·그믐처럼 어두운 밤이 가장 좋고, 약한 비와 저기압이 겹치면 활성도가 올라갑니다.",
+        moonRows:[
+            ["0~2","삭","★★★★★","가장 어두운 밤, 경계심 최저"],
+            ["3~6","초승","★★★★☆","야간 이동 활발"],
+            ["7~9","상현","★★★☆☆","보통 수준"],
+            ["10~13","차는 달","★★★☆☆","달빛 증가로 경계심 상승"],
+            ["14~16","보름","★★☆☆☆","밝은 달빛으로 대형 개체 경계"],
+            ["17~21","기우는 달","★★★☆☆","구름·흐린 날 변수"],
+            ["22~24","하현","★★★★☆","새벽 시간대 유리"],
+            ["25~29","그믐","★★★★★","대형 메기 야간 피딩 기대"]
+        ],
+        waterTitle:"메기 수온별 활성도",
+        waterSummary:"메기 최적 수온은 20~28℃입니다. 따뜻한 밤, 흐린 날, 약한 비가 겹치면 활성도가 높습니다.",
+        waterRows:[
+            ["10℃ 이하","★☆☆☆☆","저수온, 활동 둔화"],
+            ["11~15℃","★★☆☆☆","깊은 곳 대기"],
+            ["16~19℃","★★★☆☆","야간 반응 시작"],
+            ["20~28℃","★★★★★","최적 수온"],
+            ["29~31℃","★★★★☆","밤·비 오는 날 유리"],
+            ["32℃ 이상","★★☆☆☆","산소 부족·고수온 부담"]
+        ],
+        airTitle:"메기 기온별 활성도",
+        airSummary:"메기는 따뜻한 밤과 흐린 날에 강합니다. 한낮 기온보다 야간 기온 유지와 강수 여부가 더 중요합니다.",
+        airRows:[
+            ["10℃ 이하","★☆☆☆☆","저활성, 깊은 곳 위주"],
+            ["11~15℃","★★☆☆☆","야간 짧은 반응"],
+            ["16~20℃","★★★☆☆","활동 시작"],
+            ["21~28℃","★★★★★","최적 기온대"],
+            ["29~32℃","★★★★☆","야간·비 오는 날 유리"],
+            ["33℃ 이상","★★☆☆☆","고수온·산소 부족 주의"]
+        ],
+        pressureTitle:"메기 기압별 활성도",
+        pressureSummary:"메기는 저기압, 흐림, 약한 비와 궁합이 좋습니다. 기압 하강과 강수 예보가 겹치면 야간 기대치가 높아집니다.",
+        pressureRows:[
+            ["급하강","★★★★☆","비·흐림 동반 시 좋음, 안전 주의"],
+            ["완만한 하강","★★★★★","야간 피딩 기대"],
+            ["저기압 지속","★★★★★","메기 활성에 유리"],
+            ["안정","★★★☆☆","야간 포인트 선별"],
+            ["완만한 상승","★★☆☆☆","입질 약화 가능"],
+            ["고기압 지속","★★☆☆☆","맑고 밝은 밤은 불리"]
+        ]
+    },
+    kkeokji: {
+        moonTitle:"꺽지 월령 활성도",
+        moonSummary:"꺽지는 월령보다 수온, 일조량, 물색 영향이 큽니다. 상현~보름 무렵 낮 피딩이 안정적입니다.",
+        moonRows:[
+            ["0~2","삭","★★★☆☆","월령 영향은 비교적 작음"],
+            ["3~6","초승","★★★☆☆","낮 시간 수온 영향 큼"],
+            ["7~9","상현","★★★★☆","시각 사냥 반응 증가"],
+            ["10~13","차는 달","★★★★☆","맑은 물·여울 유리"],
+            ["14~16","보름","★★★★☆","낮 피딩 안정적"],
+            ["17~21","기우는 달","★★★★☆","수온 맞으면 반응 좋음"],
+            ["22~24","하현","★★★☆☆","포인트 편차 있음"],
+            ["25~29","그믐","★★★☆☆","월령보다 수온·일조량 중요"]
+        ],
+        waterTitle:"꺽지 수온별 활성도",
+        waterSummary:"꺽지 최적 수온은 16~23℃입니다. 맑은 물, 여울, 돌무더기 주변에서 반응이 좋습니다.",
+        waterRows:[
+            ["5℃ 이하","★☆☆☆☆","거의 저활성"],
+            ["6~10℃","★★☆☆☆","제한적 반응"],
+            ["11~15℃","★★★☆☆","낮 시간 반응 가능"],
+            ["16~23℃","★★★★★","최적 수온"],
+            ["24~26℃","★★★★☆","여울·그늘 유리"],
+            ["27℃ 이상","★★☆☆☆","고수온, 산소 부족 주의"]
+        ],
+        airTitle:"꺽지 기온별 활성도",
+        airSummary:"꺽지는 낮 시간 일조량과 수온 상승에 민감합니다. 너무 더운 날은 여울, 그늘, 산소량 높은 곳이 유리합니다.",
+        airRows:[
+            ["5℃ 이하","★☆☆☆☆","저활성"],
+            ["6~10℃","★★☆☆☆","낮 시간 제한적 반응"],
+            ["11~15℃","★★★☆☆","반응 시작"],
+            ["16~24℃","★★★★★","최적 기온대"],
+            ["25~29℃","★★★★☆","여울·그늘 유리"],
+            ["30℃ 이상","★★☆☆☆","고온, 산소 부족 주의"]
+        ],
+        pressureTitle:"꺽지 기압별 활성도",
+        pressureSummary:"꺽지는 기압보다 수온, 유속, 물색, 일조량 영향이 큽니다. 안정된 날씨와 맑은 물에서 시각 사냥 반응이 좋습니다.",
+        pressureRows:[
+            ["급하강","★★☆☆☆","탁수·유속 증가 시 불리"],
+            ["완만한 하강","★★★☆☆","비 전후 짧은 반응 가능"],
+            ["안정","★★★★★","맑은 물·여울 공략 유리"],
+            ["완만한 상승","★★★★☆","시야 확보 시 좋음"],
+            ["급상승","★★★☆☆","포인트 편차 큼"],
+            ["고기압 지속","★★★★☆","낮 시간 시각 사냥 유리"]
+        ]
+    }
+};
+function buildInfoTable(headers, rows) {
+    const head = headers.map(h => `<th>${h}</th>`).join("");
+    const body = rows.map(row => `
+        <tr>
+            ${row.map((cell, idx) => `<td class="${idx === 2 || (headers.length === 3 && idx === 1) ? "info-stars" : ""}">${cell}</td>`).join("")}
+        </tr>
+    `).join("");
+
+    return `<table class="info-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function showInfoModal(title, tableHtml, summary) {
+    document.getElementById("info-modal-title").innerText = title;
+    document.getElementById("info-modal-body").innerHTML =
+        `${tableHtml}<div class="info-summary">${summary}</div>`;
+    document.getElementById("info-modal").classList.add("show");
+}
+
+function hideInfoModal() {
+    document.getElementById("info-modal").classList.remove("show");
+}
+
+function closeInfoModal(event) {
+    if (event.target.id === "info-modal") hideInfoModal();
+}
+
+function showAirTempActivityInfo() {
+    const info = activityInfo[currentFish];
+    showInfoModal(
+        info.airTitle,
+        buildInfoTable(["기온", "활성도", "설명"], info.airRows),
+        info.airSummary
+    );
+}
+
+function showPressureActivityInfo() {
+    const info = activityInfo[currentFish];
+    showInfoModal(
+        info.pressureTitle,
+        buildInfoTable(["기압 상태", "활성도", "설명"], info.pressureRows),
+        info.pressureSummary
+    );
+}
+
+function showMoonActivityInfo() {
+    const info = activityInfo[currentFish];
+    showInfoModal(
+        info.moonTitle,
+        buildInfoTable(["월령", "달 상태", "활성도", "설명"], info.moonRows),
+        info.moonSummary
+    );
+}
+
+function showWaterTempActivityInfo() {
+    const info = activityInfo[currentFish];
+    showInfoModal(
+        info.waterTitle,
+        buildInfoTable(["수온", "활성도", "설명"], info.waterRows),
+        info.waterSummary
+    );
+}
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape") hideInfoModal();
+});
+
 function updateDateButtons() {
     const d = dateOnly(currentDate);
 
@@ -989,28 +1299,32 @@ function updateDateButtons() {
         `${toDateKey(minDate)} ~ ${toDateKey(maxDate)} 조회 가능`;
 }
 
+function setLabelWithHint(id, text) {
+    document.getElementById(id).innerHTML = `${text} <span class="tap-hint">보기</span>`;
+}
+
 function updateWeatherLabels(weather, water) {
     const basis = document.getElementById("basis-note");
 
     if (weather.mode === "today") {
-        document.getElementById("temp-label").innerText = "현재기온 / 현재강수";
-        document.getElementById("pressure-label").innerText = "현재기압 / 현재풍속";
-        document.getElementById("water-label").innerText = water.isActual ? "실측 하천수온 / 수위" : "현재 추정수온 / 수위";
-        basis.innerText = `(현재값 ${weather.updateTime || "--:--"}기준 · ${weather.weatherSource || "기상자료"})`;
+        setLabelWithHint("temp-label", "현재기온 / 현재강수");
+        setLabelWithHint("pressure-label", "현재기압 / 현재풍속");
+        setLabelWithHint("water-label", water.isActual ? "실측 하천수온 / 수위" : "현재 추정수온 / 수위");
+        basis.innerText = weather.weatherSource && weather.weatherSource.includes("기상청") ? `(기상청 예보 · ${weather.updateTime || "--:--"}기준)` : `(Open-Meteo · ${weather.updateTime || "--:--"}기준)`;
         return;
     }
 
     if (weather.mode === "past") {
-        document.getElementById("temp-label").innerText = "당시 평균기온 / 총강수";
-        document.getElementById("pressure-label").innerText = "당시 평균기압 / 평균풍속";
-        document.getElementById("water-label").innerText = water.isActual ? "실측 하천수온 / 수위" : "당시 추정수온 / 수위";
+        setLabelWithHint("temp-label", "당시 평균기온 / 총강수");
+        setLabelWithHint("pressure-label", "당시 평균기압 / 평균풍속");
+        setLabelWithHint("water-label", water.isActual ? "실측 하천수온 / 수위" : "당시 추정수온 / 수위");
         basis.innerText = "(당시 평균값)";
         return;
     }
 
-    document.getElementById("temp-label").innerText = "예상 평균기온 / 예상강수";
-    document.getElementById("pressure-label").innerText = "예상 평균기압 / 예상풍속";
-    document.getElementById("water-label").innerText = water.isActual ? "실측 하천수온 / 수위" : "예상 추정수온 / 수위";
+    setLabelWithHint("temp-label", "예상 평균기온 / 예상강수");
+    setLabelWithHint("pressure-label", "예상 평균기압 / 예상풍속");
+    setLabelWithHint("water-label", water.isActual ? "실측 하천수온 / 수위" : "예상 추정수온 / 수위");
     basis.innerText = "(예상 평균값)";
 }
 
