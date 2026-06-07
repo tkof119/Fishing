@@ -230,10 +230,10 @@ select,input {
 
     <div class="select-row">
         <select id="spot-select" onchange="changeSpot()">
-            <option value="pyeongchang">평창군 평창강</option>
-            <option value="joyang">정선군 조양강</option>
-            <option value="yeongwol_donggang">영월군 동강</option>
-            <option value="danyang_namhan">단양군 남한강</option>
+            <option value="pyeongchang">평창군 평창강(응암)</option>
+            <option value="joyang">정선군 조양강(노미)</option>
+            <option value="yeongwol_donggang">영월군 동강(각동)</option>
+            <option value="danyang_namhan">단양군 남한강(향산)</option>
             <option value="custom">현재/GPS 위치</option>
         </select>
         <input id="custom-name" placeholder="포인트 메모" />
@@ -287,16 +287,13 @@ select,input {
 
     <div class="section-title">예측 피딩 타임라인 & 타깃 근거</div>
     <div class="card" id="timeline-contents"></div>
-
-    <div class="section-title">오늘의 출조 전략</div>
-    <div class="card strategy-card" id="strategy"></div>
-
-    <div class="footer-note">
-        ※ 오늘 날짜는 현재값, 과거 날짜는 당시 관측/평균값, 미래 날짜는 예보값을 사용합니다.
+<div class="footer-note">
+        ※ 오늘 날짜는 현재값과 기상청 초단기예보 1시간 단위 자료를 사용합니다.
         <br>
         ※ 날짜 이동 범위는 오늘 기준 과거 1주일, 미래 2주일까지입니다.
         <br><br>
-        ※ 실제 수온/수위 API는 환경부/WAMIS 또는 자체 서버가 필요합니다. 이 코드는 API 연결을 시도하고 실패하면 최근 7일 평균기온 기반 추정값으로 자동 전환합니다.
+        ※ 실제 수온/수위 API는 환경부/WAMIS 또는 자체 서버가 필요합니다.
+        이 코드는 API 연결을 시도하고 실패하면 최근 7일 평균기온 기반 추정값으로 자동 전환합니다.
     </div>
 
     <div class="author">작성자 : 노론리 한량</div>
@@ -308,17 +305,22 @@ const CONFIG = {
     archiveApi:"https://archive-api.open-meteo.com/v1/archive",
 
     /*
-      환경부/WAMIS/자체 서버 실측 수온·수위 API 연결 자리입니다.
+      Cloudflare Worker 주소를 여기에 넣으세요.
+      예:
+      kmaWorkerUrl:"https://hanryang-weather.yourname.workers.dev"
 
+      비워두면 오늘 날씨도 Open-Meteo로 자동 대체됩니다.
+    */
+    kmaWorkerUrl:"https://fishing.tkof.workers.dev/",
+
+    /*
+      환경부/WAMIS/자체 서버 실측 수온·수위 API 연결 자리입니다.
       예시 응답:
       {
         "waterTemp": 18.4,
         "waterLevel": 1.23,
         "source": "WAMIS"
       }
-
-      브라우저에서 공공데이터 API를 직접 호출하면 CORS 또는 API 키 노출 문제가 생길 수 있어
-      실제 서비스에서는 본인 서버를 중계로 두는 것을 추천합니다.
     */
     waterApiEndpoint:"",
 };
@@ -343,15 +345,6 @@ const themes = {
         chartFill:"rgba(56,189,248,.18)"
     },
     megi: {
-        bgMain:"#16051f",
-        bgCard:"#2e1240",
-        accent:"#c084fc",
-        textMain:"#faf5ff",
-        textMuted:"#d8b4fe",
-        blue:"#f0abfc",
-        chartFill:"rgba(192,132,252,.18)"
-    },
-    kkeokji: {
         bgMain:"#052e16",
         bgCard:"#064e3b",
         accent:"#86efac",
@@ -359,14 +352,23 @@ const themes = {
         textMuted:"#bbf7d0",
         blue:"#67e8f9",
         chartFill:"rgba(134,239,172,.18)"
+    },
+    kkeokji: {
+        bgMain:"#16051f",
+        bgCard:"#2e1240",
+        accent:"#c084fc",
+        textMain:"#faf5ff",
+        textMuted:"#d8b4fe",
+        blue:"#f0abfc",
+        chartFill:"rgba(192,132,252,.18)"
     }
 };
 
 const spots = {
-    pyeongchang:{ name:"평창군 평창강", lat:37.55, lon:128.35, riverType:"clear_fast" },
-    joyang:{ name:"정선군 조양강", lat:37.38, lon:128.66, riverType:"clear_fast" },
-    yeongwol_donggang:{ name:"영월군 동강", lat:37.18, lon:128.47, riverType:"clear_fast" },
-    danyang_namhan:{ name:"단양군 남한강", lat:36.98, lon:128.36, riverType:"large_river" },
+    pyeongchang:{ name:"평창군 평창강(응암)", lat:37.328545, lon:128.387840, riverType:"clear_fast" },
+    joyang:{ name:"정선군 조양강(노미)", lat:37.382324, lon:128.602309, riverType:"clear_fast" },
+    yeongwol_donggang:{ name:"영월군 동강(삼옥)", lat:37.222144, lon:128.510245, riverType:"clear_fast" },
+    danyang_namhan:{ name:"단양군 남한강(향산)", lat:37.060700, lon:128.420917, riverType:"large_river" },
     custom:{ name:"현재/GPS 위치", lat:37.55, lon:128.35, riverType:"unknown" }
 };
 
@@ -400,6 +402,12 @@ function applyTheme(fish) {
 
 function pad(n) {
     return String(n).padStart(2,"0");
+}
+
+function formatNumber(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "-";
+    return n.toLocaleString("ko-KR");
 }
 
 function toDateKey(date) {
@@ -476,6 +484,32 @@ function getMoonEffect(age, fish) {
     return Math.sin((age / 29.53058867) * Math.PI * 2) * 4;
 }
 
+
+async function fetchKmaCurrentWeather(spot) {
+    if (!CONFIG.kmaWorkerUrl) {
+        throw new Error("KMA Worker URL is empty");
+    }
+
+    const url =
+        `${CONFIG.kmaWorkerUrl.replace(/\/$/, "")}/weather` +
+        `?lat=${encodeURIComponent(spot.lat)}` +
+        `&lon=${encodeURIComponent(spot.lon)}`;
+
+    const res = await fetch(url);
+
+    if (!res.ok) {
+        throw new Error("KMA Worker request failed");
+    }
+
+    const data = await res.json();
+
+    if (!data.ok) {
+        throw new Error(data.message || "KMA data unavailable");
+    }
+
+    return data;
+}
+
 async function fetchWeatherData(date, spot) {
     const mode = getDateMode(date);
     const target = dateOnly(date);
@@ -504,7 +538,7 @@ async function fetchWeatherData(date, spot) {
     return await res.json();
 }
 
-function extractWeather(data, date) {
+function extractWeather(data, date, kmaData = null) {
     const mode = getDateMode(date);
     const key = toDateKey(date);
 
@@ -524,7 +558,6 @@ function extractWeather(data, date) {
 
     const maxTemp = data.daily.temperature_2m_max[dIdx];
     const minTemp = data.daily.temperature_2m_min[dIdx];
-
     const current = data.current || null;
 
     const recentTemps = [];
@@ -548,8 +581,39 @@ function extractWeather(data, date) {
     let rainValue;
     let displayType;
     let updateTime = "";
+    let weatherSource = "Open-Meteo";
 
-    if (mode === "today" && current) {
+    if (mode === "today" && kmaData) {
+        tempValue = typeof kmaData.temperature === "number" ? kmaData.temperature : current?.temperature_2m;
+        feelsValue = current?.apparent_temperature ?? tempValue;
+
+        // 기상청 초단기실황에는 일반적으로 기압값이 없으므로 기압은 Open-Meteo 현재값을 보조 사용합니다.
+        pressureValue = current?.pressure_msl ?? (dayHours ? avg(dayHours.pressure) : 1013);
+
+        windValue = typeof kmaData.windSpeed === "number" ? kmaData.windSpeed : current?.wind_speed_10m;
+        rainValue = typeof kmaData.rain1h === "number" ? kmaData.rain1h : (current?.precipitation ?? 0);
+
+        if (Array.isArray(kmaData.hourly) && kmaData.hourly.length && dayHours) {
+            const kmaHourlyByHour = {};
+            kmaData.hourly.forEach(item => {
+                const hour = Number(String(item.time || "").slice(0, 2));
+                if (Number.isFinite(hour)) kmaHourlyByHour[hour] = item;
+            });
+
+            for (let h = 0; h < 24; h++) {
+                if (kmaHourlyByHour[h]) {
+                    const item = kmaHourlyByHour[h];
+                    if (typeof item.temperature === "number") dayHours.temp[h] = item.temperature;
+                    if (typeof item.rain1h === "number") dayHours.rain[h] = item.rain1h;
+                    if (typeof item.windSpeed === "number") dayHours.wind[h] = item.windSpeed;
+                }
+            }
+        }
+
+        displayType = "현재값";
+        updateTime = kmaData.baseTimeLabel || toDateTimeLabel(current?.time);
+        weatherSource = kmaData.hasHourlyForecast ? "기상청 1시간 예보" : "기상청";
+    } else if (mode === "today" && current) {
         tempValue = current.temperature_2m;
         feelsValue = current.apparent_temperature;
         pressureValue = current.pressure_msl;
@@ -557,6 +621,7 @@ function extractWeather(data, date) {
         rainValue = current.precipitation ?? 0;
         displayType = "현재값";
         updateTime = toDateTimeLabel(current.time);
+        weatherSource = "Open-Meteo";
     } else {
         tempValue = dayHours ? avg(dayHours.temp) : (maxTemp + minTemp) / 2;
         feelsValue = dayHours ? avg(dayHours.feels) : (maxTemp + minTemp) / 2;
@@ -564,6 +629,7 @@ function extractWeather(data, date) {
         windValue = dayHours ? avg(dayHours.wind) : (data.daily.wind_speed_10m_max[dIdx] ?? 0);
         rainValue = data.daily.precipitation_sum[dIdx] ?? 0;
         displayType = mode === "past" ? "당시 평균값" : "예상 평균값";
+        weatherSource = mode === "past" ? "Open-Meteo Archive" : "Open-Meteo Forecast";
     }
 
     return {
@@ -582,6 +648,7 @@ function extractWeather(data, date) {
         windMax:data.daily.wind_speed_10m_max[dIdx] ?? windValue,
         displayType,
         updateTime,
+        weatherSource,
         hourly:dayHours,
         recentTemps
     };
@@ -907,7 +974,8 @@ function renderStrategy(score, fish, weather, water, windows) {
 
     text += getRainStrategyText(fish, weather);
 
-    document.getElementById("strategy").innerText = text;
+    const strategyEl = document.getElementById("strategy");
+    if (strategyEl) strategyEl.innerText = text;
     document.getElementById("one-line-advice").innerText = text;
 }
 
@@ -928,7 +996,7 @@ function updateWeatherLabels(weather, water) {
         document.getElementById("temp-label").innerText = "현재기온 / 현재강수";
         document.getElementById("pressure-label").innerText = "현재기압 / 현재풍속";
         document.getElementById("water-label").innerText = water.isActual ? "실측 하천수온 / 수위" : "현재 추정수온 / 수위";
-        basis.innerText = `(현재값 ${weather.updateTime || "--:--"}기준)`;
+        basis.innerText = `(현재값 ${weather.updateTime || "--:--"}기준 · ${weather.weatherSource || "기상자료"})`;
         return;
     }
 
@@ -959,7 +1027,17 @@ async function updateDashboard() {
 
     try {
         const data = await fetchWeatherData(currentDate, spot);
-        const weather = extractWeather(data, currentDate);
+
+        let kmaData = null;
+        if (getDateMode(currentDate) === "today") {
+            try {
+                kmaData = await fetchKmaCurrentWeather(spot);
+            } catch (kmaErr) {
+                console.warn("기상청 현재값 불러오기 실패, Open-Meteo로 대체:", kmaErr);
+            }
+        }
+
+        const weather = extractWeather(data, currentDate, kmaData);
         const water = await getWaterData(spot, weather);
 
         updateWeatherLabels(weather, water);
@@ -995,7 +1073,7 @@ async function updateDashboard() {
         document.getElementById("val-rain").innerText = "";
 
         document.getElementById("val-pressure").innerHTML =
-            `<div class="value-pair">${Math.round(weather.pressureValue)}hPa / ${weather.windValue.toFixed(1)}km/h</div>`;
+            `<div class="value-pair">${formatNumber(Math.round(weather.pressureValue))}hPa / ${weather.windValue.toFixed(1)}km/h</div>`;
 
         document.getElementById("val-wind").innerText = "";
 

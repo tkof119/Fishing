@@ -6,7 +6,7 @@
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "description": "월령, 기상, 수온, 피딩타임 기반 민물낚시 예측 앱",
+  "description": "월령, 기상청 현재날씨, 수온, 피딩타임 기반 민물낚시 예측 앱",
   "icons": [
     {
       "src": "./icon.png",
