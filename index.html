@@ -580,6 +580,35 @@ function getMoonPhaseName(age) {
     return "그믐";
 }
 
+function getFishMoonInfluence(fish, moonName, age) {
+    if (fish === "ssogari") {
+        if (moonName === "보름") return "보름 전후 · 여명/해질녘 사냥 기대 ↑";
+        if (moonName === "삭" || moonName === "그믐") return "어두운 밤 · 경계심 감소, 대형 개체 기대";
+        if (moonName === "상현" || moonName === "차는 달") return "차오르는 달 · 야간 사냥 점차 증가";
+        if (moonName === "하현" || moonName === "기우는 달") return "기우는 달 · 새벽 피딩과 여울 끝 공략";
+        return "중간 월령 · 새벽/해질녘 시간대 선별";
+    }
+
+    if (fish === "megi") {
+        if (moonName === "삭" || moonName === "그믐") return "어두운 밤 · 메기 경계심 ↓, 야간 피딩 기대 ↑";
+        if (moonName === "보름") return "밝은 달빛 · 대형 메기 경계심 ↑, 그늘/탁수 유리";
+        if (moonName === "하현" || moonName === "기우는 달") return "달빛 감소 · 새벽 야간 이동 기대";
+        if (moonName === "초승") return "초승달 · 야간 이동성 양호";
+        return "중간 월령 · 비/저기압 동반 시 활성 증가";
+    }
+
+    if (fish === "kkeokji") {
+        if (moonName === "상현" || moonName === "차는 달" || moonName === "보름") {
+            return "밝은 낮/시야 확보 · 여울·돌무더기 시각 사냥 유리";
+        }
+        if (moonName === "삭" || moonName === "그믐") return "월령 영향 작음 · 수온/일조량/물색 우선";
+        if (moonName === "하현" || moonName === "기우는 달") return "수온 맞으면 낮 피딩 안정 · 포인트 편차 있음";
+        return "월령보다 수온·유속·물색 영향 큼";
+    }
+
+    return "어종별 월령 영향 분석";
+}
+
 function getMoonEffect(age, fish) {
     const isFull = age >= 13.5 && age <= 16.5;
     const isNew = age < 1.5 || age > 28;
@@ -990,20 +1019,117 @@ function drawFeedingChart(rows) {
     });
 }
 
+function getMoonTargetReason(fish, moonAge, moonName) {
+    const ageText = moonAge.toFixed(1);
+
+    if (fish === "ssogari") {
+        if (moonName === "보름") return `월령 ${ageText}일(${moonName})로 달빛과 야간 시야가 살아나 쏘가리의 여명·해질녘 추격 활성도가 높아질 수 있습니다.`;
+        if (moonName === "삭" || moonName === "그믐") return `월령 ${ageText}일(${moonName})로 밤이 어두워 경계심이 낮아지고, 대형 쏘가리가 얕은 여울 끝으로 붙을 가능성이 있습니다.`;
+        if (moonName === "상현" || moonName === "차는 달") return `월령 ${ageText}일(${moonName})로 야간 활동이 점차 살아나는 구간이며, 해질녘 암반·자갈 경계를 노리기 좋습니다.`;
+        return `월령 ${ageText}일(${moonName})로 새벽 피딩과 여울 끝 공략에 무게를 두는 것이 좋습니다.`;
+    }
+
+    if (fish === "megi") {
+        if (moonName === "삭" || moonName === "그믐") return `월령 ${ageText}일(${moonName})로 밤이 어두워 메기의 경계심이 낮고, 야간 이동과 먹이활동이 강해질 수 있습니다.`;
+        if (moonName === "보름") return `월령 ${ageText}일(${moonName})로 달빛이 밝아 메기가 예민해질 수 있어, 그늘·탁수·수초 주변을 조용히 공략하는 편이 좋습니다.`;
+        if (moonName === "하현" || moonName === "기우는 달") return `월령 ${ageText}일(${moonName})로 달빛이 줄어드는 구간이라 새벽 야간 이동성이 좋아질 수 있습니다.`;
+        return `월령 ${ageText}일(${moonName})로 메기 활성은 보통이며, 비와 저기압이 겹치면 야간 반응이 좋아질 수 있습니다.`;
+    }
+
+    if (fish === "kkeokji") {
+        if (moonName === "상현" || moonName === "차는 달" || moonName === "보름") return `월령 ${ageText}일(${moonName})로 시야 확보가 좋은 구간이며, 꺽지의 낮 시간 시각 사냥 반응을 기대할 수 있습니다.`;
+        return `월령 ${ageText}일(${moonName})로 월령 영향은 크지 않으며, 꺽지는 수온·일조량·물색이 더 중요합니다.`;
+    }
+
+    return `월령 ${ageText}일(${moonName}) 기준으로 어종별 활성도를 판단합니다.`;
+}
+
+function getWaterTargetReason(fish, waterTemp) {
+    const wt = Number(waterTemp);
+
+    if (fish === "ssogari") {
+        if (wt >= 18 && wt <= 24) return `수온 ${wt.toFixed(1)}℃로 쏘가리 최적 활성 수온(18~24℃)에 해당해 추격 반응을 기대할 수 있습니다.`;
+        if (wt >= 16 && wt < 18) return `수온 ${wt.toFixed(1)}℃로 쏘가리 활성 상승 구간이며, 햇볕 받은 여울과 얕은 암반 주변이 유리합니다.`;
+        if (wt > 24 && wt <= 27) return `수온 ${wt.toFixed(1)}℃로 다소 높은 편이라 낮보다는 새벽·해질녘·야간 피딩에 집중하는 것이 좋습니다.`;
+        if (wt < 16) return `수온 ${wt.toFixed(1)}℃로 쏘가리 최적 수온보다 낮아 반응이 짧을 수 있으니 깊은 소와 느린 흐름을 함께 확인하세요.`;
+        return `수온 ${wt.toFixed(1)}℃로 고수온 부담이 있어 유속이 살아있는 여울 끝과 산소량 높은 포인트가 유리합니다.`;
+    }
+
+    if (fish === "megi") {
+        if (wt >= 20 && wt <= 28) return `수온 ${wt.toFixed(1)}℃로 메기 최적 활성 수온(20~28℃)에 해당해 야간 먹이활동을 기대할 수 있습니다.`;
+        if (wt >= 16 && wt < 20) return `수온 ${wt.toFixed(1)}℃로 메기 활동이 시작되는 구간이며, 밤 시간 완만한 소와 합수부가 유리합니다.`;
+        if (wt > 28 && wt <= 31) return `수온 ${wt.toFixed(1)}℃로 높은 편이지만 메기는 야간·흐린 날·비 오는 날에 반응이 살아날 수 있습니다.`;
+        if (wt < 16) return `수온 ${wt.toFixed(1)}℃로 메기 활성은 낮은 편이며, 깊고 느린 곳에서 짧은 피딩을 노리는 편이 좋습니다.`;
+        return `수온 ${wt.toFixed(1)}℃로 고수온 부담과 산소 부족 가능성이 있어 유입수, 그늘, 산소량 높은 구간을 우선 보세요.`;
+    }
+
+    if (fish === "kkeokji") {
+        if (wt >= 16 && wt <= 23) return `수온 ${wt.toFixed(1)}℃로 꺽지 최적 활성 수온(16~23℃)에 해당해 여울·돌무더기 주변 반응이 좋을 수 있습니다.`;
+        if (wt >= 11 && wt < 16) return `수온 ${wt.toFixed(1)}℃로 꺽지 반응이 살아나는 구간이며, 햇볕이 드는 낮 시간대가 유리합니다.`;
+        if (wt > 23 && wt <= 26) return `수온 ${wt.toFixed(1)}℃로 약간 높은 편이라 빠른 여울, 그늘, 산소량 높은 돌무더기 주변이 좋습니다.`;
+        if (wt < 11) return `수온 ${wt.toFixed(1)}℃로 꺽지 활성은 낮은 편이며, 낮 시간 짧은 반응 위주로 봐야 합니다.`;
+        return `수온 ${wt.toFixed(1)}℃로 고수온 부담이 있어 깊은 그늘, 빠른 여울, 산소량 높은 구간을 우선 공략하세요.`;
+    }
+
+    return `수온 ${wt.toFixed(1)}℃ 기준으로 활성도를 판단합니다.`;
+}
+
+function getRainTargetReason(fish, rainAmount) {
+    const rain = Number(rainAmount || 0);
+
+    if (rain <= 0) {
+        if (fish === "ssogari") return "강수 예보가 없어 물색 변화는 크지 않을 가능성이 높고, 맑은 여울 끝·암반 경계 공략이 유리합니다.";
+        if (fish === "megi") return "강수 예보가 없어 메기 활성은 월령과 야간 기온의 영향을 더 크게 받으며, 조용한 밤 포인트 선별이 중요합니다.";
+        if (fish === "kkeokji") return "강수 예보가 없어 맑은 물과 시야 확보가 기대되며, 꺽지는 여울·돌무더기 시각 사냥 반응을 노리기 좋습니다.";
+        return "강수 예보가 없어 물색 변화는 크지 않을 가능성이 높습니다.";
+    }
+
+    if (fish === "ssogari") {
+        if (rain <= 10) return `${rain.toFixed(1)}mm 강수 예보로 약한 탁수와 유입수 변화가 생길 수 있어 여울 끝, 유입수 경계, 암반 라인이 유리합니다.`;
+        if (rain <= 30) return `${rain.toFixed(1)}mm 강수 예보로 유속과 탁도가 올라갈 수 있어 본류보다 가장자리, 합수부 완충 구간을 우선 보세요.`;
+        return `${rain.toFixed(1)}mm 강수 예보로 급격한 수위 상승과 탁수 가능성이 커 안전을 우선하고 무리한 입수는 피하세요.`;
+    }
+
+    if (fish === "megi") {
+        if (rain <= 10) return `${rain.toFixed(1)}mm 강수 예보로 메기 경계심이 낮아지고 냄새·진동 먹이활동이 좋아질 수 있어 야간 기대감이 높습니다.`;
+        if (rain <= 30) return `${rain.toFixed(1)}mm 강수 예보로 메기 활성은 오를 수 있으나 유속이 강해질 수 있어 완만한 소와 합수부 안쪽이 유리합니다.`;
+        return `${rain.toFixed(1)}mm 강수 예보로 메기 이동성은 생길 수 있지만 수위 상승 위험이 커 안전한 연안 포인트만 확인하세요.`;
+    }
+
+    if (fish === "kkeokji") {
+        if (rain <= 10) return `${rain.toFixed(1)}mm 강수 예보로 약간의 물색 변화가 생길 수 있으나, 탁도가 심하지 않다면 얕은 여울과 돌무더기 주변 반응을 기대할 수 있습니다.`;
+        if (rain <= 30) return `${rain.toFixed(1)}mm 강수 예보로 탁수와 유속 증가가 예상되어 꺽지는 맑은 지류, 그늘진 완충수역 위주가 좋습니다.`;
+        return `${rain.toFixed(1)}mm 강수 예보로 꺽지 시각 사냥이 불리해지고 안전 위험이 커져 출조를 신중히 판단하세요.`;
+    }
+
+    return `${rain.toFixed(1)}mm 강수 예보가 있어 물색과 유속 변화가 예상됩니다.`;
+}
+
+
 function renderTimeline(windows, fish, moonName, weather, water) {
+    const moonAge = getMoonPhaseAge(currentDate);
+
     const html = windows.map(w => {
         const start = `${pad(w.start)}:00`;
         const end = `${pad((w.end + 1) % 24)}:00`;
 
-        let reason = "";
+        let target = "";
+        let timeReason = "";
 
         if (fish === "ssogari") {
-            reason = "여명/해질녘 광량 변화와 베이트피시 이동이 겹치며 여울 끝, 수중 암반, 브레이크 라인 공략 가치가 높습니다.";
+            target = "쏘가리";
+            timeReason = "여명/해질녘 광량 변화와 베이트피시 이동이 겹치는 시간입니다. 여울 끝, 암반, 자갈밭 경계를 우선 공략하세요.";
         } else if (fish === "megi") {
-            reason = "야간 저조도와 약한 강수·저기압 조건에서 측선 감각 기반 먹이활동이 강해질 가능성이 큽니다.";
+            target = "메기";
+            timeReason = "야간 저조도 시간대에 측선 감각 기반 먹이활동이 강해질 수 있습니다. 완만한 소, 합수부, 수초·돌틈 주변이 유리합니다.";
         } else {
-            reason = "일조량과 수온 상승으로 돌무더기, 평여울, 얕은 런 구간의 시각 사냥 반응이 좋아질 수 있습니다.";
+            target = "꺽지";
+            timeReason = "일조량과 수온 상승으로 시각 사냥 반응이 좋아질 수 있는 시간입니다. 얕은 여울, 돌무더기, 맑은 물의 그늘 경계를 보세요.";
         }
+
+        const moonReason = getMoonTargetReason(fish, moonAge, moonName);
+        const waterReason = getWaterTargetReason(fish, water.waterTemp);
+        const rainReason = getRainTargetReason(fish, weather.rainSum);
 
         return `
             <div class="timeline-item">
@@ -1013,9 +1139,11 @@ function renderTimeline(windows, fish, moonName, weather, water) {
                         ${w.peak >= 80 ? "Major" : "Minor"}
                     </span>
                 </div>
-                <div class="time-reason">${reason}</div>
+                <div class="time-reason">${target} 기준 · ${timeReason}</div>
                 <div class="note">
-                    ● ${moonName} · 수온 ${water.waterTemp}°C · 강수 ${weather.rainSum}mm
+                    ● ${moonReason}<br>
+                    ● ${waterReason}<br>
+                    ● ${rainReason}
                 </div>
             </div>
         `;
@@ -1374,12 +1502,7 @@ async function updateDashboard() {
         document.getElementById("val-moon").innerText =
             `월령 ${moonAge.toFixed(1)} · ${moonName}`;
 
-        document.getElementById("moon-influence").innerHTML =
-            moonName === "보름"
-            ? "밝은 달빛 · 쏘가리 여명/야간 영향 ↑"
-            : moonName === "삭" || moonName === "그믐"
-            ? "어두운 밤 · 메기 경계심 ↓"
-            : "중간 월령 · 시간대 영향 보통";
+        document.getElementById("moon-influence").innerText = "";
 
         document.getElementById("val-temp").innerHTML =
             `<div class="value-pair">${weather.tempValue.toFixed(1)}℃ / ${weather.rainValue.toFixed(1)}mm</div>`;
