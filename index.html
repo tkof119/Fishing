@@ -316,6 +316,26 @@ select,input {
     margin-top:2px;
 }
 
+
+.today-btn {
+    width:100%;
+    background:var(--bg-card);
+    color:var(--text-main);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:10px;
+    padding:10px;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:900;
+    letter-spacing:.2px;
+}
+.today-btn:active {
+    transform:scale(.985);
+}
+.today-btn:hover {
+    border-color:rgba(255,255,255,.22);
+}
+
 </style>
 </head>
 
@@ -342,11 +362,11 @@ select,input {
         <select id="spot-select" onchange="changeSpot()">
             <option value="pyeongchang">평창군 평창강(응암)</option>
             <option value="joyang">정선군 조양강(노미)</option>
-            <option value="yeongwol_donggang">영월군 동강(각동)</option>
+            <option value="yeongwol_donggang">영월군 동강(삼옥)</option>
             <option value="danyang_namhan">단양군 남한강(향산)</option>
             <option value="custom">현재/GPS 위치</option>
         </select>
-        <input id="custom-name" placeholder="포인트 메모" />
+        <button class="today-btn" id="today-btn" onclick="goToday()">초기화면</button>
     </div>
 
     <div class="solunar-card">
@@ -574,6 +594,11 @@ function dateOnly(date) {
     const d = new Date(date);
     d.setHours(0,0,0,0);
     return d;
+}
+
+
+function getKoreanWeekday(date) {
+    return ["일","월","화","수","목","금","토"][date.getDay()];
 }
 
 function getDateMode(date) {
@@ -1502,7 +1527,7 @@ async function updateDashboard() {
     updateDateButtons();
 
     document.getElementById("display-date").innerText =
-        `${currentDate.getFullYear()}년 ${currentDate.getMonth()+1}월 ${currentDate.getDate()}일`;
+        `${currentDate.getFullYear()}년 ${currentDate.getMonth()+1}월 ${currentDate.getDate()}일(${getKoreanWeekday(currentDate)})`;
 
     document.getElementById("fish-name").innerText = fishInfo[currentFish].name;
     document.getElementById("location-name").innerText = `📍 ${spot.name}`;
@@ -1540,7 +1565,7 @@ async function updateDashboard() {
         statusEl.style.color = "#000";
 
         document.getElementById("val-moon").innerHTML =
-            formatCardValue(`월령 ${moonAge.toFixed(1)}일`, moonName, true);
+            formatCardValue(`월령 ${moonAge.toFixed(1)}`, moonName);
 
         document.getElementById("moon-influence").innerText = "";
 
@@ -1586,6 +1611,12 @@ function switchFish(fish) {
     updateDashboard();
 }
 
+function goToday() {
+    currentDate = new Date(appToday);
+    currentDate.setHours(0,0,0,0);
+    updateDashboard();
+}
+
 function changeDate(dir) {
     const next = new Date(currentDate);
     next.setDate(next.getDate() + dir);
@@ -1614,8 +1645,9 @@ function useGPS() {
         pos => {
             spots.custom.lat = pos.coords.latitude;
             spots.custom.lon = pos.coords.longitude;
+            const customNameEl = document.getElementById("custom-name");
             spots.custom.name =
-                document.getElementById("custom-name").value || "현재/GPS 위치";
+                customNameEl && customNameEl.value ? customNameEl.value : "현재/GPS 위치";
 
             currentSpotKey = "custom";
             document.getElementById("spot-select").value = "custom";
