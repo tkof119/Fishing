@@ -518,6 +518,18 @@ function formatNumber(value) {
     if (!Number.isFinite(n)) return "-";
     return n.toLocaleString("ko-KR");
 }
+function getWindMs(weather) {
+    const wind = Number(weather.windValue);
+    if (!Number.isFinite(wind)) return 0;
+
+    // 기상청 WSD는 m/s, Open-Meteo wind_speed_10m은 km/h 기준입니다.
+    if (weather.weatherSource && weather.weatherSource.includes("기상청")) {
+        return wind;
+    }
+
+    return wind / 3.6;
+}
+
 
 function toDateKey(date) {
     return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
@@ -1204,7 +1216,7 @@ function renderStrategy(score, fish, weather, water, windows) {
     } else if (score >= 75) {
         text = `${fishName} 조건이 좋습니다. ${best}에 집중하고, 반응이 없으면 수심·유속 변화를 빠르게 바꾸세요.`;
     } else if (score >= 60) {
-        text = `무난하지만 포인트 선별이 중요합니다. 수온 ${water.waterTemp}°C, 풍속 ${weather.windValue.toFixed(1)}km/h 기준으로 바람 맞는 연안과 구조물 위주가 좋습니다.`;
+        text = `무난하지만 포인트 선별이 중요합니다. 수온 ${water.waterTemp}°C, 풍속 ${getWindMs(weather).toFixed(1)}m/s 기준으로 바람 맞는 연안과 구조물 위주가 좋습니다.`;
     } else {
         text = `조건이 까다롭습니다. 장시간 낚시보다 짧은 피딩 타임만 노리고, 채비는 작게 낮추는 전략이 유리합니다.`;
     }
@@ -1510,7 +1522,7 @@ async function updateDashboard() {
         document.getElementById("val-rain").innerText = "";
 
         document.getElementById("val-pressure").innerHTML =
-            `<div class="value-pair">${formatNumber(Math.round(weather.pressureValue))}hPa / ${weather.windValue.toFixed(1)}km/h</div>`;
+            `<div class="value-pair">${formatNumber(Math.round(weather.pressureValue))}hPa / ${getWindMs(weather).toFixed(1)}m/s</div>`;
 
         document.getElementById("val-wind").innerText = "";
 
