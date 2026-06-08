@@ -305,6 +305,17 @@ select,input {
     color:var(--text-main);
 }
 
+
+.data-value-wrap{
+    display:block;
+    line-height:1.35;
+    word-break:keep-all;
+}
+.data-value-wrap .subline{
+    display:block;
+    margin-top:2px;
+}
+
 </style>
 </head>
 
@@ -518,6 +529,23 @@ function formatNumber(value) {
     if (!Number.isFinite(n)) return "-";
     return n.toLocaleString("ko-KR");
 }
+function formatCardValue(mainValue, subValue, forceBreak = false) {
+    const main = String(mainValue ?? "");
+    const sub = String(subValue ?? "");
+    const text = `${main} / ${sub}`;
+
+    if (forceBreak || text.length > 16) {
+        return `
+            <span class="data-value-wrap">
+                ${main} /
+                <span class="subline">${sub}</span>
+            </span>
+        `;
+    }
+
+    return `<span class="data-value-wrap">${text}</span>`;
+}
+
 function getWindMs(weather) {
     const wind = Number(weather.windValue);
     if (!Number.isFinite(wind)) return 0;
@@ -1511,23 +1539,23 @@ async function updateDashboard() {
         statusEl.style.background = status.color;
         statusEl.style.color = "#000";
 
-        document.getElementById("val-moon").innerText =
-            `월령 ${moonAge.toFixed(1)} · ${moonName}`;
+        document.getElementById("val-moon").innerHTML =
+            formatCardValue(`월령 ${moonAge.toFixed(1)}일`, moonName, true);
 
         document.getElementById("moon-influence").innerText = "";
 
         document.getElementById("val-temp").innerHTML =
-            `<div class="value-pair">${weather.tempValue.toFixed(1)}℃ / ${weather.rainValue.toFixed(1)}mm</div>`;
+            `<div class="value-pair">${formatCardValue(`${weather.tempValue.toFixed(1)}℃`, `${weather.rainValue.toFixed(1)}mm`)}</div>`;
 
         document.getElementById("val-rain").innerText = "";
 
         document.getElementById("val-pressure").innerHTML =
-            `<div class="value-pair">${formatNumber(Math.round(weather.pressureValue))}hPa / ${getWindMs(weather).toFixed(1)}m/s</div>`;
+            `<div class="value-pair">${formatCardValue(`${formatNumber(Math.round(weather.pressureValue))}hPa`, `${getWindMs(weather).toFixed(1)}m/s`)}</div>`;
 
         document.getElementById("val-wind").innerText = "";
 
         document.getElementById("val-watertemp").innerHTML =
-            `<div class="value-pair">${water.waterTemp}℃ / ${water.waterLevelText}</div>`;
+            `<div class="value-pair">${formatCardValue(`${water.waterTemp}℃`, water.waterLevelText)}</div>`;
 
         document.getElementById("val-waterlevel").innerText =
             water.source.includes("최근 7일 평균기온 기반") ? "최근 7일 평균기온 기반" : "";
